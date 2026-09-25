@@ -16,13 +16,27 @@ export interface AppSettings {
   allowFutureAttendance: boolean;
   /** Displayed organisation name. Replace with your own. */
   organisationName: string;
+  /**
+   * Small print at the bottom of the landing page. The default is deliberately
+   * cautious: until you replace the placeholder logo with branding you are
+   * authorised to use, the site should not imply official status. Set
+   * NEXT_PUBLIC_FOOTER_NOTE once that is in order, or to an empty string to
+   * remove the line entirely.
+   */
+  footerNote: string;
 }
 
 export function getAppSettings(): AppSettings {
+  const footerNote = process.env.NEXT_PUBLIC_FOOTER_NOTE;
+
   return {
     attendanceEditEnabled: envFlag(process.env.ATTENDANCE_EDIT_ENABLED, true),
     allowFutureAttendance: envFlag(process.env.ALLOW_FUTURE_ATTENDANCE, false),
     organisationName: process.env.NEXT_PUBLIC_ORG_NAME?.trim() || 'Attendance Management System',
+    footerNote:
+      footerNote === undefined
+        ? 'Internal use only. Authorised personnel only.'
+        : footerNote.trim(),
   };
 }
 

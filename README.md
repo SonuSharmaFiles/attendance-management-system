@@ -28,8 +28,10 @@ export reports.
 9. [Security model — and its limits](#9-security-model--and-its-limits)
 10. [Configuration switches](#10-configuration-switches)
 11. [Dates and the Nepal timezone](#11-dates-and-the-nepal-timezone)
-12. [Tests](#12-tests)
-13. [Troubleshooting](#13-troubleshooting)
+12. [Where the data lives](#12-where-the-data-lives)
+13. [Going to production](#13-going-to-production)
+14. [Tests](#14-tests)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -59,6 +61,8 @@ app/
   layout.tsx                        Root layout, metadata, toaster
   page.tsx                          Landing page — computer code lookup
   robots.ts                         Blocks all crawlers (internal tool)
+  manifest.ts                       Add-to-home-screen support
+  error.tsx  global-error.tsx       Error boundaries (no stack traces shown)
   not-found.tsx
   employee/[computerCode]/page.tsx  Employee dashboard (session-guarded)
   admin/
@@ -119,6 +123,7 @@ proxy.ts                            Session refresh + admin route guard
 supabase/migrations/0001_init.sql   Tables, indexes, constraints, RLS
 supabase/migrations/0002_storage.sql Photo bucket + storage policies
 supabase/seed.sql                   Fictional demo employees (dev only)
+scripts/check-setup.ts              Read-only production readiness check
 tests/                              Node test-runner suites
 ```
 
@@ -193,6 +198,7 @@ cp .env.example .env.local
 | `EMPLOYEE_SESSION_SECRET` | You generate it | Signs the employee session cookie. 32+ characters. |
 | `EMPLOYEE_SESSION_TTL_SECONDS` | Optional | Default `43200` (12 hours). |
 | `NEXT_PUBLIC_ORG_NAME` | You choose | Shown in headers and on the PDF. |
+| `NEXT_PUBLIC_FOOTER_NOTE` | You choose | Small print on the landing page. Empty removes it. |
 | `ATTENDANCE_EDIT_ENABLED` | You choose | `true` (default) lets employees correct an entry. |
 | `ALLOW_FUTURE_ATTENDANCE` | You choose | `false` (default) blocks marking dates that have not happened. |
 
@@ -239,6 +245,10 @@ npm test
 
 ```bash
 npm run lint
+```
+
+```bash
+npm run check:setup
 ```
 
 ---
@@ -462,7 +472,145 @@ All of this lives in `lib/date/nepal.ts` and is covered by tests.
 
 ---
 
-## 12. Tests
+## 12. Where the data lives
+
+Everything persistent is in **your Supabase project** — a managed PostgreSQL
+database that Supabase hosts, backs up and patches. Nothing is stored on the web
+server, in the GitHub repository, in a spreadsheet, or in the browser.
+
+```text
+Staff phone / office PC
+        │  HTTPS
+        ▼
+Next.js on Vercel                 ← stateless; holds no data, can be redeployed
+        │                            or scaled at any time without data loss
+        │  server-side only
+        ▼
+Supabase project (your account)
+   ├── PostgreSQL       employees, attendance, profiles
+   ├── Storage          employee-photos bucket (profile pictures)
+   └── Auth             administrator accounts
+```
+
+**What is stored where**
+
+| Data | Location |
+| --- | --- |
+| Employee records | `employees` table |
+| Daily attendance and remarks | `attendance` table — one row per employee per day |
+| Administrator accounts and roles | Supabase Auth + `profiles` table |
+| Profile photos | Supabase Storage, `employee-photos/{employee-id}/profile-*.webp` |
+| Employee login session | A signed cookie in the employee's own browser. Holds an id and an expiry, nothing else. |
+| Excel / CSV / PDF exports | Generated on demand and streamed to the browser. Never written to the server. |
+
+**What this means in practice**
+
+- **The database is the single source of truth.** Excel is only ever used for
+  import, export and backup. The application never reads a spreadsheet as live
+  data, and nothing is kept in `localStorage`.
+- **Redeploying loses nothing.** The web layer is stateless. Push a change,
+  Vercel rebuilds, the data is untouched.
+- **The data is yours.** It sits in a Supabase project on your own account. You
+  can download a full SQL dump at any time (Supabase → Database → Backups), or
+  export everything to Excel from the admin dashboard.
+- **Scale.** Supabase's free tier covers 500 MB. An attendance row is roughly
+  100 bytes, so 1,000 staff marked every day for ten years is about 350 MB —
+  well inside it. Profile photos are the larger cost; they are resized to 512 px
+  WebP in the browser before upload, typically 30–60 KB each.
+
+**Backups.** Supabase takes daily backups on paid plans. On the free tier, take
+your own: either Supabase → Database → Backups → download, or use the admin
+dashboard's **Export All Attendance to Excel** on a schedule. Treat the Excel
+export as a secondary copy, not the primary one.
+
+---
+
+## 13. Going to production
+
+The application is production-ready; what is left is configuration that only you
+can do, because it needs your Supabase account and your organisation's branding.
+
+### Step 1 — create the real database
+
+Follow [section 3](#3-supabase-setup): create a Supabase project and run
+`0001_init.sql` and `0002_storage.sql`. **Do not run `seed.sql`** — that is demo
+data.
+
+### Step 2 — point the app at it
+
+Put the real values in `.env.local` (locally) and in Vercel's environment
+variables (in production). See [section 4](#4-environment-variables).
+
+### Step 3 — verify the setup
+
+```bash
+npm run check:setup
+```
+
+This is read-only and checks the things that are easy to get wrong:
+
+- every environment variable is present and is not still a placeholder
+- `EMPLOYEE_SESSION_SECRET` is long enough
+- `employees`, `attendance` and `profiles` exist
+- the `employee-photos` bucket exists and is readable
+- **the public anon key cannot read `employees` or `attendance`** — if RLS were
+  misconfigured, anyone could download your whole staff list, so this is the
+  most important line in the output
+- at least one administrator exists
+- no demo records are left in the database
+
+Fix every `✗` before going live.
+
+### Step 4 — make it yours
+
+- [ ] Replace `public/logo.svg` with your authorised emblem
+- [ ] Set `NEXT_PUBLIC_ORG_NAME` to your organisation's name
+- [ ] Set `NEXT_PUBLIC_FOOTER_NOTE`, or leave it empty to remove the line
+- [ ] Import your real staff list ([section 7](#7-importing-your-existing-employee-spreadsheet))
+- [ ] Delete any demo employees:
+      `delete from public.employees where computer_code like 'NP1000%';`
+- [ ] Create the real administrator account and remove any test one
+
+> **On branding:** only present this as an official site of an organisation if
+> you are authorised to do so. Until then the neutral placeholder logo and the
+> default footer keep the deployment honest.
+
+### Step 5 — deploy and harden
+
+- [ ] Deploy to Vercel ([section 8](#8-deploying-to-github-and-vercel))
+- [ ] Add a custom domain so staff get a memorable URL (HTTPS is automatic)
+- [ ] In Supabase → Authentication → Providers, **disable public sign-ups** so
+      nobody can create an account themselves. Administrators should only ever
+      be created by you, from the dashboard.
+- [ ] Turn on Supabase's daily backups, or schedule your own export
+- [ ] Re-run `npm run check:setup` against production
+
+### What is already handled
+
+Security headers (CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`,
+`Permissions-Policy`), `no-store` on every API response, error boundaries so a
+failure never shows a stack trace, loading skeletons on every route, search
+engines blocked, a web app manifest so staff can add the system to their phone's
+home screen, and the three-layer admin gate described in
+[section 9](#9-security-model--and-its-limits).
+
+### Worth adding later
+
+These are deliberate omissions, not oversights — none is required for day-to-day
+use, and each is easier to add once you know how your organisation works:
+
+- **An audit trail.** Attendance corrections are currently silent. If you need
+  to know who changed what, add `changed_by` and a history table.
+- **A durable rate limiter.** `lib/rate-limit.ts` is in-memory and per instance.
+  Back it with Upstash Redis or Vercel KV for a hard limit.
+- **A second authentication factor.** See the honest limitation in
+  [section 9](#9-security-model--and-its-limits) — one function to change.
+- **Error monitoring.** Sentry or Vercel's own log drains, so you hear about
+  failures before your staff tell you.
+
+---
+
+## 14. Tests
 
 ```bash
 npm test
@@ -477,7 +625,7 @@ classification, and image magic-number sniffing.
 
 ---
 
-## 13. Troubleshooting
+## 15. Troubleshooting
 
 **"Supabase is not configured"** — `.env.local` is missing or incomplete.
 Restart the dev server after editing it; Next.js only reads env files at startup.

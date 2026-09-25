@@ -5,7 +5,7 @@ import { Logo } from '@/components/Logo';
 import { getAppSettings } from '@/lib/config';
 
 export default function LandingPage() {
-  const { organisationName } = getAppSettings();
+  const { organisationName, footerNote } = getAppSettings();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,9 +44,9 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <footer className="px-4 pb-8 text-center text-xs text-slate-400">
-        Internal use only. This is not an official government website.
-      </footer>
+      {footerNote ? (
+        <footer className="px-4 pb-8 text-center text-xs text-slate-400">{footerNote}</footer>
+      ) : null}
     </div>
   );
 }
