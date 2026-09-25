@@ -1,0 +1,10 @@
+This file exists so the scheduled keep-alive workflow can record repository
+activity roughly once a month.
+
+GitHub automatically disables scheduled workflows in a repository that has seen
+no activity for 60 days. Because attendance here is recorded monthly, the repo
+can easily go quiet for longer than that — at which point the keep-alive would
+stop running and the Supabase project would be paused, then eventually deleted.
+
+The workflow updates this file only when the most recent commit is more than 30
+days old, so it adds about a dozen commits a year and nothing more.

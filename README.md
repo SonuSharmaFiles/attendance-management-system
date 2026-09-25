@@ -30,8 +30,9 @@ export reports.
 11. [Dates and the Nepal timezone](#11-dates-and-the-nepal-timezone)
 12. [Where the data lives](#12-where-the-data-lives)
 13. [Going to production](#13-going-to-production)
-14. [Tests](#14-tests)
-15. [Troubleshooting](#15-troubleshooting)
+14. [Keeping the database awake](#14-keeping-the-database-awake)
+15. [Tests](#15-tests)
+16. [Troubleshooting](#16-troubleshooting)
 
 ---
 
@@ -124,6 +125,8 @@ supabase/migrations/0001_init.sql   Tables, indexes, constraints, RLS
 supabase/migrations/0002_storage.sql Photo bucket + storage policies
 supabase/seed.sql                   Fictional demo employees (dev only)
 scripts/check-setup.ts              Read-only production readiness check
+scripts/keep-alive.ts               Stops the Supabase Free project pausing
+.github/workflows/keep-alive.yml    Runs the above twice a week
 tests/                              Node test-runner suites
 ```
 
@@ -606,6 +609,9 @@ Fix every `✗` before going live.
       nobody can create an account themselves. Administrators should only ever
       be created by you, from the dashboard.
 - [ ] Turn on Supabase's daily backups, or schedule your own export
+- [ ] Add the two repository secrets and run the keep-alive workflow once
+      ([section 14](#14-keeping-the-database-awake)) — essential if attendance
+      is recorded monthly rather than daily
 - [ ] Re-run `npm run check:setup` against production
 
 ### What is already handled
@@ -633,7 +639,77 @@ use, and each is easier to add once you know how your organisation works:
 
 ---
 
-## 14. Tests
+## 14. Keeping the database awake
+
+**This matters if attendance is only recorded occasionally — monthly, say.**
+
+Supabase pauses a Free-plan project after roughly **7 days** of low database
+activity. A paused project is unreachable until somebody restores it by hand
+from the dashboard, and a project left paused long enough is **permanently
+deleted**.
+
+For a system used once a month, that is the default outcome. Mark attendance on
+the 1st, and by the 8th the project is paused. Come back on the 1st of next
+month and nobody can sign in until you restore it — and if a couple of months
+slip by, the data can be gone entirely.
+
+### The fix: a scheduled ping
+
+`.github/workflows/keep-alive.yml` runs twice a week (Mondays and Thursdays,
+03:15 UTC) and performs one tiny read query. That counts as database activity
+and resets the 7-day clock. It reads only — it never touches attendance data.
+
+**Set it up once:**
+
+1. In the repository: **Settings → Secrets and variables → Actions →
+   New repository secret**
+2. Add `NEXT_PUBLIC_SUPABASE_URL` — your project URL
+3. Add `SUPABASE_SERVICE_ROLE_KEY` — your service-role key
+4. Go to the **Actions** tab, choose **Keep Supabase awake**, and press
+   **Run workflow** to confirm it works
+
+GitHub Actions is free for this. Two runs a week of a few seconds each is far
+inside the free allowance, and private repositories get 2,000 minutes a month.
+
+You can also run it by hand at any time:
+
+```bash
+npm run keep-alive
+```
+
+### The trap inside the fix
+
+GitHub **disables scheduled workflows in a repository that has seen no activity
+for 60 days**. A repo touched once a month will hit that — and then the
+keep-alive quietly stops, the project pauses, and the deletion clock starts.
+
+The workflow guards against this itself: after a successful ping it checks the
+age of the most recent commit, and if it is over 30 days old it commits a dated
+marker to `.github/last-activity`. That is about a dozen commits a year and
+keeps the schedule enabled indefinitely.
+
+GitHub also emails you before disabling a workflow. If you ever get that email,
+open the **Actions** tab and re-enable it.
+
+### If the project is already paused
+
+Supabase → your project → **Restore project**. It takes a minute or two and the
+data comes back intact. Then run the keep-alive once to restart the clock.
+
+### The alternative: don't rely on it
+
+The Supabase **Pro** plan (currently $25/month) does not pause projects at all.
+If this system becomes something your organisation depends on, that is the
+honest answer — a free-tier project kept alive by a cron job is fine for a
+personal tool, but it is a single point of failure for staff records.
+
+Whichever you choose, **take backups** (see
+[section 12](#12-where-the-data-lives)). The admin dashboard's *Export All
+Attendance to Excel* is the quickest insurance, and it costs nothing.
+
+---
+
+## 15. Tests
 
 ```bash
 npm test
@@ -648,7 +724,7 @@ classification, and image magic-number sniffing.
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 **"Supabase is not configured"** — `.env.local` is missing or incomplete.
 Restart the dev server after editing it; Next.js only reads env files at startup.

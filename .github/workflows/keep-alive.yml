@@ -1,0 +1,76 @@
+# Keeps the Supabase Free-plan project from being paused.
+#
+# Supabase pauses a Free project after roughly 7 days of low database activity,
+# and a project left paused long enough is eventually deleted. This runs a tiny
+# read query twice a week, which is enough to keep the project awake even when
+# attendance is only recorded once a month.
+#
+# Setup (once): in the repository, go to
+#   Settings → Secrets and variables → Actions → New repository secret
+# and add:
+#   NEXT_PUBLIC_SUPABASE_URL     your project URL
+#   SUPABASE_SERVICE_ROLE_KEY    the service-role key
+#
+# If a run fails, GitHub emails you — which is exactly when you want to know.
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # 03:15 UTC Mondays and Thursdays — roughly every 3–4 days, comfortably
+    # inside the 7-day window even if one run is skipped.
+    - cron: '15 3 * * 1,4'
+  workflow_dispatch: {}
+
+# Needed only by the heartbeat step below.
+permissions:
+  contents: write
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the Supabase client only
+        # A full `npm ci` would pull the whole toolchain for one query.
+        run: npm install @supabase/supabase-js --no-save --no-audit --no-fund
+
+      - name: Ping the database
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/keep-alive.ts
+
+      # GitHub disables scheduled workflows after 60 days with no repository
+      # activity. A repo that is only touched once a month will hit that, and
+      # the keep-alive would silently stop — taking the database with it.
+      # Committing a dated marker roughly monthly keeps the schedule alive.
+      - name: Refresh repository activity if it has gone quiet
+        run: |
+          LAST=$(git log -1 --format=%ct)
+          NOW=$(date +%s)
+          DAYS=$(( (NOW - LAST) / 86400 ))
+          echo "Last commit was $DAYS day(s) ago."
+
+          if [ "$DAYS" -lt 30 ]; then
+            echo "Recent enough — no heartbeat commit needed."
+            exit 0
+          fi
+
+          date -u +"Last automated keep-alive: %Y-%m-%dT%H:%M:%SZ" > .github/last-activity
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-activity
+          git commit -m "chore: keep-alive heartbeat (keeps scheduled workflows enabled)"
+          git push
