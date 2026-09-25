@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local environment files (never commit real secrets)
+.env
+.env.local
+.env.*.local
+# ...but the template must be committed so others can set the project up
+!.env.example

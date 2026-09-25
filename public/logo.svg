@@ -1,0 +1,19 @@
+<!--
+  PLACEHOLDER LOGO — replace this file with your organisation's authorised
+  emblem (keep the filename `logo.svg`, or drop in `logo.png` and update
+  components/Logo.tsx). Nothing else in the app needs to change.
+
+  This is a generic, neutral mark. It is NOT an official emblem of any
+  government body and must not be presented as one.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Organisation logo placeholder">
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2b4878"/>
+      <stop offset="100%" stop-color="#172c47"/>
+    </linearGradient>
+  </defs>
+  <path d="M48 6 14 19v27c0 20.3 14 36.6 34 44 20-7.4 34-23.7 34-44V19L48 6Z" fill="url(#shield)"/>
+  <path d="M48 14 22 24v22c0 16 11 29.2 26 35.6C63 75.2 74 62 74 46V24L48 14Z" fill="none" stroke="#9bbadd" stroke-width="2" opacity="0.6"/>
+  <path d="M36 47.5 44.5 56 62 38.5" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

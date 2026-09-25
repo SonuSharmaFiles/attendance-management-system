@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Design tokens.
+ * Institutional palette: white surfaces, dark navy primary, and the three
+ * attendance colours. Kept light-only on purpose — this is a shared workplace
+ * tool printed and projected as often as it is read on a phone, and a single
+ * high-contrast theme is easier to keep accessible.
+ */
+@theme {
+  --color-navy-50: #f2f6fb;
+  --color-navy-100: #e2ebf6;
+  --color-navy-200: #c6d8ec;
+  --color-navy-300: #9bbadd;
+  --color-navy-400: #6993c8;
+  --color-navy-500: #4573b1;
+  --color-navy-600: #345b94;
+  --color-navy-700: #2b4878;
+  --color-navy-800: #1e3a5f;
+  --color-navy-900: #172c47;
+
+  --color-present: #16a34a;
+  --color-present-soft: #dcfce7;
+  --color-present-ink: #14532d;
+
+  --color-absent: #dc2626;
+  --color-absent-soft: #fee2e2;
+  --color-absent-ink: #7f1d1d;
+
+  --color-unmarked: #94a3b8;
+  --color-unmarked-soft: #f1f5f9;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans Devanagari", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background-color: #f6f8fb;
+    color: #0f172a;
+    font-family: var(--font-sans);
+    /* Stops iOS Safari zooming when a 16px input is focused. */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A visible, consistent focus ring everywhere — keyboard users must never
+     lose track of where they are. */
+  :focus-visible {
+    outline: 3px solid var(--color-navy-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Respect users who ask for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-slate-200;
+  }
 }
