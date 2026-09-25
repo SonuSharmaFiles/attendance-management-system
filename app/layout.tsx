@@ -21,6 +21,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: '#1e3a5f',
+  // Emits <meta name="color-scheme" content="light">. This is read before any
+  // CSS loads, so a dark-mode device paints a light canvas from the first
+  // frame instead of flashing dark on every refresh.
+  colorScheme: 'light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

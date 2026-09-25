@@ -35,8 +35,21 @@
 }
 
 @layer base {
+  /*
+   * This is a light-only interface. Saying so explicitly matters: a browser on
+   * a device set to dark mode paints its OWN dark canvas until the page's
+   * styles are applied, which showed as a dark flash on every refresh.
+   * `color-scheme: light` also keeps scrollbars and form controls light.
+   */
+  :root {
+    color-scheme: light;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
+    /* The background must sit on `html`, not only on `body`. `html` is what
+       the browser paints the window canvas from, and it was transparent. */
+    background-color: #f6f8fb;
   }
 
   body {
