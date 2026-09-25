@@ -121,3 +121,33 @@ export function validatePhotoFile(file: File): string | null {
 export function firstIssueMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Please check the information you entered.';
 }
+
+/**
+ * An administrator changing their own email or password.
+ *
+ * The current password is always required. The session alone is not enough:
+ * if somebody walked up to an unlocked laptop, they must not be able to take
+ * the account over by silently changing the login details.
+ */
+export const adminAccountUpdateSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Please enter your current password.'),
+    newEmail: z
+      .union([z.string().trim().email('Please enter a valid email address.'), z.literal('')])
+      .optional()
+      .transform((value) => (value ? value.toLowerCase() : undefined)),
+    newPassword: z
+      .union([
+        z
+          .string()
+          .min(8, 'The new password must be at least 8 characters.')
+          .max(72, 'The new password must be 72 characters or fewer.'),
+        z.literal(''),
+      ])
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+  })
+  .refine((value) => value.newEmail !== undefined || value.newPassword !== undefined, {
+    message: 'Enter a new email address or a new password.',
+    path: ['newEmail'],
+  });

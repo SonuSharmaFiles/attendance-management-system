@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CalendarCheck, LayoutDashboard, LogOut, Upload, Users } from 'lucide-react';
+import { CalendarCheck, LayoutDashboard, LogOut, UserCog, Upload, Users } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -11,6 +11,7 @@ const NAV = [
   { href: '/admin/employees', label: 'Employees', Icon: Users, exact: true },
   { href: '/admin/employees/import', label: 'Import', Icon: Upload, exact: true },
   { href: '/admin/attendance', label: 'Attendance', Icon: CalendarCheck, exact: true },
+  { href: '/admin/account', label: 'My Account', Icon: UserCog, exact: true },
 ];
 
 export function AdminShell({
@@ -45,9 +46,12 @@ export function AdminShell({
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden max-w-[180px] truncate text-xs text-navy-200 sm:inline">
+            <Link
+              href="/admin/account"
+              className="hidden max-w-[180px] truncate rounded-lg px-2 py-1 text-xs text-navy-200 transition-colors hover:bg-navy-700 hover:text-white sm:inline"
+            >
               {adminName}
-            </span>
+            </Link>
             <button
               type="button"
               onClick={signOut}
