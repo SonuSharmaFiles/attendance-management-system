@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: orgName,
   // Internal tool: keep every page out of search engines.
   robots: { index: false, follow: false, nocache: true },
-  icons: { icon: '/logo.svg' },
+  icons: { icon: '/icon.png' },
 };
 
 export const viewport: Viewport = {

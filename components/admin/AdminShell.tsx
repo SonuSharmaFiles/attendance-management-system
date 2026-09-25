@@ -35,7 +35,7 @@ export function AdminShell({
       <header className="sticky top-0 z-30 border-b border-navy-900/20 bg-navy-800 text-white">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
           <Link href="/admin" className="flex items-center gap-3">
-            <Logo size={32} className="h-8 w-8" />
+            <Logo size={32} className="h-8 w-auto" />
             <span>
               <span className="block text-sm font-bold leading-tight sm:text-base">
                 Admin Dashboard

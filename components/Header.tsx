@@ -14,7 +14,7 @@ export function Header({ title, subtitle, action, href = '/' }: HeaderProps) {
     <header className="sticky top-0 z-30 border-b border-navy-900/20 bg-navy-800 text-white">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
         <Link href={href} className="flex min-w-0 items-center gap-3">
-          <Logo size={36} className="h-9 w-9 shrink-0" />
+          <Logo size={36} className="h-9 w-auto shrink-0" />
           <span className="min-w-0">
             <span className="block truncate text-sm font-bold leading-tight sm:text-base">
               {title}

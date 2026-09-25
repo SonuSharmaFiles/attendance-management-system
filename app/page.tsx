@@ -12,7 +12,7 @@ export default function LandingPage() {
       <main id="main" className="flex flex-1 items-center justify-center px-4 py-10 sm:py-16">
         <div className="w-full max-w-md">
           <div className="text-center">
-            <Logo size={72} className="mx-auto h-16 w-16 sm:h-20 sm:w-20" />
+            <Logo size={72} className="mx-auto h-16 w-auto sm:h-20" />
             <h1 className="mt-5 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
               Attendance Management System
             </h1>

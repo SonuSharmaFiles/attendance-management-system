@@ -24,7 +24,7 @@ export default function ErrorBoundary({
   return (
     <main id="main" className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm text-center">
-        <Logo size={56} className="mx-auto h-14 w-14" />
+        <Logo size={56} className="mx-auto h-14 w-auto" />
         <h1 className="mt-6 text-xl font-bold text-navy-900">Something went wrong</h1>
         <p className="mt-2 text-sm text-slate-600">
           The page could not be loaded. This is usually temporary — please try again.

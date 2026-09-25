@@ -3,20 +3,26 @@ import Image from 'next/image';
 /**
  * Organisation emblem.
  *
- * `public/logo.svg` ships as a NEUTRAL PLACEHOLDER. Replace that one file with
- * your organisation's authorised emblem and every screen updates. Do not use a
- * government emblem unless you have been authorised to do so.
+ * The image lives at `public/logo.png`. To change it later, replace that one
+ * file — nothing else needs editing. Only use branding your organisation is
+ * authorised to display.
+ *
+ * `size` sets the HEIGHT in pixels. The width follows the image's own
+ * proportions, so a non-square emblem is never stretched or squashed.
  */
 export function Logo({ size = 40, className = '' }: { size?: number; className?: string }) {
   return (
     <Image
-      src="/logo.svg"
+      src="/logo.png"
       alt=""
-      width={size}
-      height={size}
+      // The file's real pixel size. Next.js uses this to serve a sharp image
+      // at whatever size the page actually displays it.
+      width={105}
+      height={99}
       priority
-      className={className}
-      // Decorative: the adjacent site title carries the accessible name.
+      className={`object-contain ${className}`}
+      style={{ height: size, width: 'auto' }}
+      // Decorative: the site title next to it carries the meaning.
       aria-hidden
     />
   );

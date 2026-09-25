@@ -8,10 +8,10 @@ manage staff, import the existing employee spreadsheet, correct attendance and
 export reports.
 
 > **Branding notice**
-> `public/logo.svg` is a **neutral placeholder**. It is not the emblem of any
-> government body and must not be presented as one. Replace that single file
-> with your organisation's authorised logo and every screen updates. This is an
-> internal tool; it is not an official government website.
+> The emblem lives at `public/logo.png`. Replace that single file to change the
+> branding everywhere — the header, the landing page, the browser tab and the
+> phone home-screen icon all read from it. Only display branding your
+> organisation is authorised to use.
 
 ---
 
@@ -593,7 +593,7 @@ Fix every `✗` before going live.
 
 ### Step 4 — make it yours
 
-- [ ] Replace `public/logo.svg` with your authorised emblem
+- [ ] Confirm `public/logo.png` is branding you are authorised to display
 - [ ] Set `NEXT_PUBLIC_ORG_NAME` to your organisation's name
 - [ ] Set `NEXT_PUBLIC_FOOTER_NOTE`, or leave it empty to remove the line
 - [ ] Import your real staff list ([section 7](#7-importing-your-existing-employee-spreadsheet))

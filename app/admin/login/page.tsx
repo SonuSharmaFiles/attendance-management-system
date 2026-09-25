@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
     <main id="main" className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <Logo size={56} className="mx-auto h-14 w-14" />
+          <Logo size={56} className="mx-auto h-14 w-auto" />
           <h1 className="mt-4 text-xl font-bold text-navy-900">Administrator Sign In</h1>
           <p className="mt-1 text-sm text-slate-600">
             Restricted area. Staff should use the main page instead.
