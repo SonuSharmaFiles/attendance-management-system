@@ -347,17 +347,40 @@ That must print `0`.
 GitHub → Vercel → Supabase (PostgreSQL + Storage + Auth)
 ```
 
-### 8.3 A note on GitHub Pages
+### 8.3 Do not use GitHub Pages
 
-**GitHub Pages will not run this application.** Pages serves static files only,
-and this app relies on server-side code for every security guarantee: the
-computer-code lookup, the signed session cookie, the service-role database
-access and the Excel/PDF generation all run on the server.
+> **⚠️ Never enable GitHub Pages on this repository.**
+>
+> Pages does not run server code. Instead of hosting the application, it
+> publishes the repository's files as a static website — and it does so on the
+> **public internet even when the repository itself is private**.
+>
+> This was tested on this exact repository. With Pages enabled, all of the
+> following returned HTTP 200 to anybody with the URL:
+>
+> ```text
+> /lib/auth/session-token.ts
+> /supabase/migrations/0001_init.sql
+> /app/page.tsx
+> /package.json
+> ```
+>
+> No credentials leaked, because `.env.local` is git-ignored and has never been
+> committed — but the entire source of a private staff-records system was
+> readable by anyone. If Pages has ever been enabled here, turn it off in
+> **Settings → Pages → Unpublish site**; the CDN can take several minutes to
+> stop serving the cached copy afterwards.
 
-Deploying the frontend statically would force the Supabase anon key to talk to
-the database directly from the browser, which would mean opening RLS policies to
-anonymous users — and anyone could then download the entire staff list. **Use
-Vercel** (or any Node host: Netlify, Render, Fly.io, a VPS).
+Even setting the exposure aside, Pages cannot work for this application. Every
+security guarantee depends on server-side code: the computer-code lookup, the
+signed session cookie, service-role database access, and Excel/PDF generation.
+
+Making it static would force the Supabase anon key to query the database
+directly from the browser, which means granting the `anon` role read access to
+`employees` — and then anyone could download the whole staff list. The static
+approach and the security model are mutually exclusive.
+
+**Use Vercel**, or any host that runs Node: Netlify, Render, Fly.io, or a VPS.
 
 ---
 
