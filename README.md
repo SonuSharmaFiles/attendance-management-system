@@ -123,6 +123,7 @@ types/employee.ts  types/attendance.ts
 proxy.ts                            Session refresh + admin route guard
 supabase/migrations/0001_init.sql   Tables, indexes, constraints, RLS
 supabase/migrations/0002_storage.sql Photo bucket + storage policies
+supabase/migrations/0003_harden_functions.sql  Security-linter fixes
 supabase/seed.sql                   Fictional demo employees (dev only)
 scripts/check-setup.ts              Read-only production readiness check
 scripts/keep-alive.ts               Stops the Supabase Free project pausing
@@ -148,6 +149,9 @@ Open **SQL Editor** in the Supabase dashboard and run these two files, in order:
    and all Row Level Security policies.
 2. `supabase/migrations/0002_storage.sql` — the `employee-photos` bucket and its
    storage policies.
+3. `supabase/migrations/0003_harden_functions.sql` — closes the warnings raised
+   by Supabase's security linter (pins `search_path`, moves the signup trigger
+   out of the public API surface).
 
 Both scripts are safe to run more than once.
 
