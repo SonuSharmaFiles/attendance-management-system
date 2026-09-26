@@ -159,3 +159,26 @@ export function bsYearMonthOf(date: DateStr): BsYearMonth {
   const { year, month } = toBs(date);
   return { year, month };
 }
+
+/** ० १ २ ३ ४ ५ ६ ७ ८ ९ */
+const NEPALI_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'] as const;
+
+/** 2083 -> "२०८३". Digits only; any other character is left alone. */
+export function toNepaliNumber(value: number | string): string {
+  return String(value).replace(/[0-9]/g, (digit) => NEPALI_DIGITS[Number(digit)]);
+}
+
+/** "आश्विन २०८३" */
+export function bsMonthLabelNepali({ year, month }: BsYearMonth): string {
+  return `${BS_MONTHS_NEPALI[month - 1]} ${toNepaliNumber(year)}`;
+}
+
+/** "१० आश्विन २०८३" */
+export function bsLongLabelNepali(bs: BsDate): string {
+  return `${toNepaliNumber(bs.day)} ${BS_MONTHS_NEPALI[bs.month - 1]} ${toNepaliNumber(bs.year)}`;
+}
+
+/** Short Devanagari weekday headings for narrow screens: आइत, सोम, … */
+export const BS_WEEKDAYS_NEPALI_SHORT = [
+  'आइत', 'सोम', 'मंगल', 'बुध', 'बिहि', 'शुक्र', 'शनि',
+] as const;

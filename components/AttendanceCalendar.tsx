@@ -3,10 +3,12 @@
 import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { compareDateStr, parseDateStr, type DateStr } from '@/lib/date/nepal';
 import {
-  BS_WEEKDAYS,
-  BS_WEEKDAYS_SHORT,
+  BS_WEEKDAYS_NEPALI,
+  BS_WEEKDAYS_NEPALI_SHORT,
   bsMonthLabel,
+  bsMonthLabelNepali,
   buildBsMonthGrid,
+  toNepaliNumber,
   type BsYearMonth,
 } from '@/lib/date/bikram';
 import type { AttendanceDay, CalendarHoliday } from '@/types/attendance';
@@ -61,8 +63,10 @@ export function AttendanceCalendar({
         </button>
 
         <h2 aria-live="polite" className="text-center">
-          <span className="block text-base font-bold text-navy-900 sm:text-lg">{label}</span>
-          <span className="block text-[11px] font-normal text-slate-500">Bikram Sambat</span>
+          <span className="block text-base font-bold text-navy-900 sm:text-lg">
+            {bsMonthLabelNepali(yearMonth)}
+          </span>
+          <span className="block text-[11px] font-normal text-slate-500">{label}</span>
         </h2>
 
         <button
@@ -80,22 +84,24 @@ export function AttendanceCalendar({
         <CalendarSkeleton />
       ) : (
         <>
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2" aria-hidden>
-            {BS_WEEKDAYS.map((day, index) => (
+          <div className="mx-auto grid grid-cols-7 gap-1 sm:w-4/5 sm:gap-1.5" aria-hidden>
+            {BS_WEEKDAYS_NEPALI.map((day, index) => (
               <div
                 key={day}
-                className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs"
+                className="pb-1 text-center text-[11px] font-semibold tracking-wide text-slate-600 sm:text-xs"
               >
-                <span className="sm:hidden">{BS_WEEKDAYS_SHORT[index]}</span>
+                <span className="sm:hidden">{BS_WEEKDAYS_NEPALI_SHORT[index]}</span>
                 <span className="hidden sm:inline">{day}</span>
               </div>
             ))}
           </div>
 
-          <div role="grid" className="grid grid-cols-7 gap-1.5 sm:gap-2">
+          <div role="grid" className="mx-auto grid grid-cols-7 gap-1 sm:w-4/5 sm:gap-1.5">
             {cells.map((cell, index) => {
               if (!cell) {
-                return <div key={`pad-${index}`} role="presentation" className="aspect-square" />;
+                return (
+                  <div key={`pad-${index}`} role="presentation" className="h-[30px] sm:h-[42px]" />
+                );
               }
 
               const { date, bsDay } = cell;
@@ -136,26 +142,28 @@ export function AttendanceCalendar({
                   aria-label={`${bsDay} ${bsMonthLabel(yearMonth)}, ${statusText}${locked ? ', set by administrator' : ''}`}
                   aria-current={isToday ? 'date' : undefined}
                   title={holiday ? holiday.title : undefined}
-                  className={`relative flex aspect-square min-h-[46px] flex-col items-center justify-center rounded-lg border p-0.5 transition-colors ${tone} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
+                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
                 >
-                  <span className="text-sm font-semibold tabular-nums sm:text-base">{bsDay}</span>
+                  <span className="text-sm font-semibold leading-none sm:text-base">
+                    {toNepaliNumber(bsDay)}
+                  </span>
 
                   {/* Colour is never the only signal. */}
                   {holiday ? (
                     <span
                       aria-hidden
-                      className="mt-0.5 w-full truncate px-0.5 text-[8px] font-bold uppercase leading-tight sm:text-[9px]"
+                      className="w-full truncate px-0.5 text-[7px] font-bold uppercase leading-tight sm:text-[9px]"
                     >
                       Holiday
                     </span>
                   ) : record ? (
                     <>
-                      <span aria-hidden className="text-[11px] font-bold leading-none sm:hidden">
+                      <span aria-hidden className="text-[9px] font-bold leading-none sm:hidden">
                         {record.status === 'present' ? '✓' : '✕'}
                       </span>
                       <span
                         aria-hidden
-                        className="hidden text-[10px] font-semibold uppercase leading-tight sm:block"
+                        className="hidden text-[8px] font-semibold uppercase leading-tight sm:block"
                       >
                         {record.status === 'present' ? 'Present' : 'Absent'}
                       </span>
@@ -165,14 +173,14 @@ export function AttendanceCalendar({
                   {locked ? (
                     <Lock
                       aria-hidden
-                      className="absolute left-1 top-1 h-2.5 w-2.5 opacity-70"
+                      className="absolute left-0.5 top-0.5 h-2 w-2 opacity-70"
                     />
                   ) : null}
 
                   {record?.remark ? (
                     <span
                       aria-hidden
-                      className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-current opacity-70"
+                      className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-current opacity-70"
                     />
                   ) : null}
                 </button>

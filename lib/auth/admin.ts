@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { AppError } from '@/lib/errors';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -21,7 +22,15 @@ export type AdminAccess =
   | { state: 'forbidden'; email: string | null }
   | { state: 'admin'; context: AdminContext };
 
-export async function resolveAdminAccess(): Promise<AdminAccess> {
+/**
+ * Wrapped in React's `cache`, so this runs ONCE per request.
+ *
+ * The admin layout checks access, then each page checked it again. Each check
+ * is two network calls to Supabase (validate the JWT, then read the role), so
+ * every admin page was making four round-trips where two would do. Over an
+ * intercontinental hop that was most of the page's latency.
+ */
+export const resolveAdminAccess = cache(async function resolveAdminAccess(): Promise<AdminAccess> {
   const supabase = await createSupabaseServerClient();
 
   // getUser() revalidates the JWT with Supabase, so a forged or expired
@@ -53,7 +62,7 @@ export async function resolveAdminAccess(): Promise<AdminAccess> {
       supabase,
     },
   };
-}
+});
 
 /** Convenience for pages that have already been gated by the admin layout. */
 export async function getAdminContext(): Promise<AdminContext | null> {

@@ -8,7 +8,7 @@ import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TableSkeleton } from '@/components/LoadingState';
 import { describeRule, type HolidayRule } from '@/lib/holidays/rules';
-import { BS_WEEKDAYS, toBs } from '@/lib/date/bikram';
+import { BS_WEEKDAYS, BS_WEEKDAYS_NEPALI, bsLongLabelNepali, toBs } from '@/lib/date/bikram';
 import { todayInNepal } from '@/lib/date/nepal';
 
 type Recurrence = 'once' | 'weekly' | 'monthly';
@@ -254,9 +254,9 @@ export function HolidayManager() {
 
           {form.recurrence === 'weekly' ? (
             <Select label="Which day of the week?" {...field('weekday')}>
-              {BS_WEEKDAYS.map((name, index) => (
-                <option key={name} value={index}>
-                  {name}
+              {BS_WEEKDAYS_NEPALI.map((nepali, index) => (
+                <option key={nepali} value={index}>
+                  {nepali} — {BS_WEEKDAYS[index]}
                 </option>
               ))}
             </Select>
@@ -281,7 +281,13 @@ export function HolidayManager() {
               label={form.recurrence === 'once' ? 'Date' : 'Starts from'}
               type="date"
               required
-              hint={`Nepali: ${(() => { try { const b = toBs(form.startDate); return `${b.day}/${b.month}/${b.year}`; } catch { return '—'; } })()}`}
+              hint={(() => {
+                try {
+                  return bsLongLabelNepali(toBs(form.startDate));
+                } catch {
+                  return 'Pick a date to see the Nepali date.';
+                }
+              })()}
               {...field('startDate')}
             />
             <Input

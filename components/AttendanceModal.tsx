@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { type DateStr } from '@/lib/date/nepal';
-import { bsLongLabel, toBs } from '@/lib/date/bikram';
+import { bsLongLabel, bsLongLabelNepali, toBs } from '@/lib/date/bikram';
 import { MAX_REMARK_LENGTH } from '@/lib/config';
 import type { AttendanceDay, AttendanceStatus, CalendarHoliday } from '@/types/attendance';
 
@@ -56,17 +56,17 @@ function AttendanceDialog({
       open
       onClose={onClose}
       busy={saving}
-      title={`Attendance — ${bsLongLabel(toBs(date))}`}
+      title={`Attendance — ${bsLongLabelNepali(toBs(date))}`}
       description={
         isHoliday
-          ? `${date} in the English calendar.`
+          ? `${bsLongLabel(toBs(date))} · ${date}`
           : adminLocked
             ? 'Updated by administrator'
             : locked
               ? 'This entry has been submitted and can no longer be changed.'
               : existing
                 ? 'You can change this entry below.'
-                : `Select your attendance for this date. (${date})`
+                : `${bsLongLabel(toBs(date))} · ${date}`
       }
     >
       {isHoliday ? (

@@ -29,6 +29,16 @@ export function Modal({ open, onClose, title, description, children, busy = fals
     if (!busy) onClose();
   }, [busy, onClose]);
 
+  /*
+   * Focus and scroll-lock, on OPEN only.
+   *
+   * This was previously combined with the keyboard handler below and shared its
+   * dependency list, which included `requestClose`. Callers pass inline arrow
+   * functions for `onClose`, so `requestClose` was a new value on every render,
+   * so this effect re-ran on every render — and each run pulled focus back to
+   * the first field. Typing more than one character into any field in a dialog
+   * was impossible. Keep the two effects separate.
+   */
   useEffect(() => {
     if (!open) return;
 
@@ -36,11 +46,21 @@ export function Modal({ open, onClose, title, description, children, busy = fals
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
 
-    // Move focus into the dialog so screen readers and keyboards start inside it.
     const timer = window.setTimeout(() => {
       const first = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
       (first ?? panelRef.current)?.focus();
     }, 0);
+
+    return () => {
+      document.body.style.overflow = overflow;
+      window.clearTimeout(timer);
+      previouslyFocused.current?.focus?.();
+    };
+  }, [open]);
+
+  /** Escape to close, Tab kept inside the dialog. Re-binds freely; harmless. */
+  useEffect(() => {
+    if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -50,7 +70,6 @@ export function Modal({ open, onClose, title, description, children, busy = fals
       }
       if (event.key !== 'Tab' || !panelRef.current) return;
 
-      // Keep Tab cycling inside the dialog.
       const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (items.length === 0) return;
       const first = items[0];
@@ -65,12 +84,7 @@ export function Modal({ open, onClose, title, description, children, busy = fals
     }
 
     document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = overflow;
-      window.clearTimeout(timer);
-      previouslyFocused.current?.focus?.();
-    };
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, requestClose]);
 
   if (!open || typeof document === 'undefined') return null;

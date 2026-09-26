@@ -16,7 +16,7 @@ import type { DateStr } from '@/lib/date/nepal';
 import {
   addBsMonths,
   bsMonthDates,
-  bsMonthLabel,
+  bsMonthLabelNepali,
   type BsYearMonth,
 } from '@/lib/date/bikram';
 import type { AttendanceDay, AttendanceStatus, CalendarHoliday } from '@/types/attendance';
@@ -57,7 +57,7 @@ export function EmployeeDashboard({
     () => summariseDates(bsMonthDates(yearMonth), days, holidayMap, today),
     [yearMonth, days, holidayMap, today],
   );
-  const label = bsMonthLabel(yearMonth);
+  const label = bsMonthLabelNepali(yearMonth);
 
   /** Loads exactly one month for this employee — never the whole history. */
   const loadMonth = useCallback(async (target: BsYearMonth) => {
