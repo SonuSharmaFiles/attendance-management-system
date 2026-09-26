@@ -64,8 +64,8 @@ export async function upsertAttendance(params: {
         employee_id: params.employeeId,
         attendance_date: params.date,
         status: params.status,
-        // A present day never keeps a stale absence reason.
-        remark: params.status === 'absent' ? params.remark : null,
+        // A present day never keeps a stale absence or leave reason.
+        remark: params.status === 'present' ? null : params.remark,
         locked_by_admin: params.lockedByAdmin ?? false,
       },
       { onConflict: 'employee_id,attendance_date' },

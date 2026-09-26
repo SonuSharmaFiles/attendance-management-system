@@ -14,10 +14,12 @@ import type { Employee } from '@/types/employee';
  * the calendar shown to staff is Bikram Sambat and a BS month straddles two
  * Gregorian ones.
  *
- * Two kinds of day are deliberately excluded from "Not Marked":
+ * Three kinds of day are deliberately excluded from "Not Marked":
  *   - days that have not happened yet
  *   - holidays, which nobody is expected to mark
- * Otherwise every Saturday would quietly count against an employee.
+ *   - approved leave
+ * Otherwise every Saturday, and every approved day off, would quietly count
+ * against an employee.
  */
 export function summariseDates(
   dates: DateStr[],
@@ -31,6 +33,7 @@ export function summariseDates(
   let absent = 0;
   let notMarked = 0;
   let holidayCount = 0;
+  let leaveCount = 0;
   let elapsedDays = 0;
 
   for (const date of dates) {
@@ -46,9 +49,17 @@ export function summariseDates(
       continue;
     }
 
+    const record = byDate.get(date);
+
+    // Approved leave is not a working day and is never held against anyone,
+    // so it is excluded from the rate as well as from Not Marked.
+    if (record?.status === 'leave') {
+      leaveCount += 1;
+      continue;
+    }
+
     if (!isFuture) elapsedDays += 1;
 
-    const record = byDate.get(date);
     if (record?.status === 'present') present += 1;
     else if (record?.status === 'absent') absent += 1;
     else if (!isFuture) notMarked += 1;
@@ -63,6 +74,7 @@ export function summariseDates(
     absent,
     notMarked,
     holidays: holidayCount,
+    leave: leaveCount,
     elapsedDays,
     attendanceRate,
   };
@@ -103,7 +115,13 @@ export function buildReportRows(
       fullName: employee.full_name,
       date,
       day: dayName(date),
-      status: record ? (record.status === 'present' ? 'Present' : 'Absent') : 'Not Marked',
+      status: record
+        ? record.status === 'present'
+          ? 'Present'
+          : record.status === 'leave'
+            ? 'Leave'
+            : 'Absent'
+        : 'Not Marked',
       remark: record?.remark ?? (holiday ? holiday.title : ''),
     });
   }
@@ -114,12 +132,14 @@ export function totalsFromRows(rows: AttendanceReportRow[]) {
   const present = rows.filter((row) => row.status === 'Present').length;
   const absent = rows.filter((row) => row.status === 'Absent').length;
   const holidays = rows.filter((row) => row.status === 'Holiday').length;
+  const leave = rows.filter((row) => row.status === 'Leave').length;
   const marked = present + absent;
   return {
     present,
     absent,
     holidays,
-    notMarked: rows.length - marked - holidays,
+    leave,
+    notMarked: rows.length - marked - holidays - leave,
     attendanceRate: marked === 0 ? 0 : Math.round((present / marked) * 10000) / 100,
   };
 }

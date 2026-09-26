@@ -1,4 +1,4 @@
-import { CalendarDays, Check, Minus, PartyPopper, TrendingUp, X } from 'lucide-react';
+import { CalendarDays, Check, Minus, PartyPopper, Plane, TrendingUp, X } from 'lucide-react';
 import type { MonthlySummary as Summary } from '@/types/attendance';
 
 interface TileProps {
@@ -23,11 +23,12 @@ function Tile({ label, value, Icon, tone }: TileProps) {
 export function MonthlySummary({ summary, monthLabel }: { summary: Summary; monthLabel: string }) {
   return (
     <section aria-label={`Attendance summary for ${monthLabel}`}>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         <Tile label="Total Days" value={summary.totalDays} Icon={CalendarDays} tone="text-navy-600" />
         <Tile label="Present" value={summary.present} Icon={Check} tone="text-present" />
         <Tile label="Absent" value={summary.absent} Icon={X} tone="text-absent" />
         <Tile label="Holidays" value={summary.holidays} Icon={PartyPopper} tone="text-absent" />
+        <Tile label="Leave" value={summary.leave} Icon={Plane} tone="text-leave" />
         <Tile label="Not Marked" value={summary.notMarked} Icon={Minus} tone="text-unmarked" />
         <Tile
           label="Attendance Rate"
@@ -37,8 +38,8 @@ export function MonthlySummary({ summary, monthLabel }: { summary: Summary; mont
         />
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        Holidays are never counted as absent, and Not Marked counts working days up to today only —
-        the rest of {monthLabel} is not counted against you.
+        Holidays and approved leave are never counted as absent, and Not Marked counts working days
+        up to today only — the rest of {monthLabel} is not counted against you.
       </p>
     </section>
   );

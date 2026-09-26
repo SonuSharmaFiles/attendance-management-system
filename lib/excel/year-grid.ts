@@ -49,8 +49,8 @@ interface DayColumn {
 
 const NAVY_ODD = 'FF1E3A5F';
 const NAVY_EVEN = 'FF2B4878';
-const FILL = { P: 'FFDCFCE7', A: 'FFFEE2E2', H: 'FFF1F5F9' } as const;
-const INK = { P: 'FF14532D', A: 'FF7F1D1D', H: 'FF64748B' } as const;
+const FILL = { P: 'FFDCFCE7', A: 'FFFEE2E2', L: 'FFFEF3C7', H: 'FFF1F5F9' } as const;
+const INK = { P: 'FF14532D', A: 'FF7F1D1D', L: 'FF78350F', H: 'FF64748B' } as const;
 
 function buildColumns(bsYear: number, fromDate?: DateStr, toDate?: DateStr): DayColumn[] {
   const columns: DayColumn[] = [];
@@ -113,7 +113,9 @@ export async function buildYearGridWorkbook(input: GridInput): Promise<Buffer> {
       const record = attendance.get(`${person.id}|${column.date}`);
       const holiday = holidays.get(column.date);
 
-      if (record) row.push(record.status === 'present' ? 'P' : 'A');
+      if (record) {
+        row.push(record.status === 'present' ? 'P' : record.status === 'leave' ? 'L' : 'A');
+      }
       else if (holiday) row.push('H');
       else if (column.date > today) row.push('');
       else row.push('');
@@ -148,10 +150,10 @@ export async function buildYearGridWorkbook(input: GridInput): Promise<Buffer> {
       }
 
       const column = columns[columnNumber - 3];
-      const letter = String(cell.value ?? '') as 'P' | 'A' | 'H' | '';
+      const letter = String(cell.value ?? '') as 'P' | 'A' | 'L' | 'H' | '';
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-      if (letter === 'P' || letter === 'A' || letter === 'H') {
+      if (letter === 'P' || letter === 'A' || letter === 'L' || letter === 'H') {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: FILL[letter] } };
         cell.font = { size: 9, bold: letter !== 'H', color: { argb: INK[letter] } };
       } else {
@@ -182,6 +184,7 @@ export async function buildYearGridWorkbook(input: GridInput): Promise<Buffer> {
   [
     ['P', 'Present'],
     ['A', 'Absent'],
+    ['L', 'Leave — assigned by an administrator'],
     ['H', 'Holiday — hover the cell to see which holiday'],
     ['(blank)', 'Not marked, or the day has not happened yet'],
   ].forEach(([symbol, meaning]) => key.addRow({ symbol, meaning }));

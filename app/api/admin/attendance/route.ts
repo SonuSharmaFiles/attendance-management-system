@@ -74,7 +74,8 @@ export async function POST(request: Request) {
           employee_id: parsed.employeeId,
           attendance_date: parsed.date,
           status: parsed.status,
-          remark: parsed.status === 'absent' ? parsed.remark : null,
+          // A remark explains an absence or a leave; a present day needs none.
+          remark: parsed.status === 'present' ? null : parsed.remark,
           // Anything an administrator sets is locked against staff edits.
           locked_by_admin: true,
         },

@@ -1,6 +1,6 @@
 import type { DateStr } from '@/lib/date/nepal';
 
-export type AttendanceStatus = 'present' | 'absent';
+export type AttendanceStatus = 'present' | 'absent' | 'leave';
 
 export interface AttendanceRecord {
   id: string;
@@ -36,6 +36,8 @@ export interface MonthlySummary {
   notMarked: number;
   /** Days covered by a holiday rule. Never counted as present or absent. */
   holidays: number;
+  /** Days an administrator assigned as leave. Never counted as absent. */
+  leave: number;
   /** Working days that have happened so far (future and holidays excluded). */
   elapsedDays: number;
   attendanceRate: number;
@@ -46,6 +48,6 @@ export interface AttendanceReportRow {
   fullName: string;
   date: DateStr;
   day: string;
-  status: 'Present' | 'Absent' | 'Not Marked' | 'Holiday';
+  status: 'Present' | 'Absent' | 'Leave' | 'Not Marked' | 'Holiday';
   remark: string;
 }

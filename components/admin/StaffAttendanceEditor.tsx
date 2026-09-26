@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Lock, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, Lock, Plane, Trash2, X } from 'lucide-react';
 import { StaffDownloadButton } from '@/components/admin/StaffDownloadButton';
+import { AssignLeaveButton } from '@/components/admin/AssignLeaveButton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -142,11 +143,18 @@ export function StaffAttendanceEditor({ employee, today }: StaffAttendanceEditor
           Back to staff list
         </Link>
 
-        <StaffDownloadButton
-          employeeId={employee.id}
-          employeeName={employee.full_name}
-          variant="button"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <AssignLeaveButton
+            employeeId={employee.id}
+            employeeName={employee.full_name}
+            onAssigned={() => void load(yearMonth)}
+          />
+          <StaffDownloadButton
+            employeeId={employee.id}
+            employeeName={employee.full_name}
+            variant="button"
+          />
+        </div>
       </div>
 
       <MonthlySummary summary={summary} monthLabel={bsMonthLabelNepali(yearMonth)} />
@@ -237,14 +245,14 @@ function DayEditor({
       ) : null}
 
       <Textarea
-        label="Reason / Remark (only saved with Absent)"
+        label="Reason / Remark (saved with Absent and Leave)"
         value={remark}
         maxLength={MAX_REMARK_LENGTH}
         onChange={(event) => setRemark(event.target.value)}
         disabled={saving}
       />
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         <Button variant="present" fullWidth loading={saving} onClick={() => onSave('present', remark)}>
           <Check aria-hidden className="h-4 w-4" />
           Present
@@ -252,6 +260,15 @@ function DayEditor({
         <Button variant="absent" fullWidth loading={saving} onClick={() => onSave('absent', remark)}>
           <X aria-hidden className="h-4 w-4" />
           Absent
+        </Button>
+        <Button
+          fullWidth
+          loading={saving}
+          onClick={() => onSave('leave', remark)}
+          className="bg-leave text-white hover:bg-amber-700"
+        >
+          <Plane aria-hidden className="h-4 w-4" />
+          Leave
         </Button>
       </div>
 

@@ -1,4 +1,4 @@
-import { Check, Minus, X } from 'lucide-react';
+import { Check, Minus, Plane, X } from 'lucide-react';
 import type { AttendanceStatus } from '@/types/attendance';
 
 export type DisplayStatus = AttendanceStatus | 'unmarked';
@@ -17,6 +17,11 @@ const STYLES: Record<DisplayStatus, { label: string; className: string; Icon: ty
     label: 'Absent',
     className: 'bg-absent-soft text-absent-ink border-red-300',
     Icon: X,
+  },
+  leave: {
+    label: 'Leave',
+    className: 'bg-leave-soft text-leave-ink border-amber-300',
+    Icon: Plane,
   },
   unmarked: {
     label: 'Not Marked',

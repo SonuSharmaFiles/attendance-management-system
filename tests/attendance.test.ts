@@ -8,8 +8,12 @@ import { datesBetweenMonths } from '@/lib/date/nepal';
 
 const SEPTEMBER = { year: 2026, month: 9 };
 
-function day(date: string, status: 'present' | 'absent', remark: string | null = null): AttendanceDay {
-  return { date, status, remark, lockedByAdmin: false };
+function day(
+  date: string,
+  status: 'present' | 'absent' | 'leave',
+  remark: string | null = null,
+): AttendanceDay {
+  return { date, status, remark, lockedByAdmin: status === 'leave' };
 }
 
 /** Every Gregorian date in September 2026, the month these tests use. */
@@ -87,6 +91,38 @@ describe('monthly summary', () => {
     assert.equal(summary.holidays, 1);
   });
 
+  it('never counts approved leave as absent or unmarked', () => {
+    const summary = summariseDates(
+      SEPT_DATES,
+      [
+        day('2026-09-01', 'present'),
+        day('2026-09-02', 'leave', 'घर बिदा'),
+        day('2026-09-03', 'leave', 'घर बिदा'),
+        day('2026-09-04', 'absent'),
+      ],
+      NO_HOLIDAYS,
+      '2026-09-05',
+    );
+
+    assert.equal(summary.leave, 2);
+    assert.equal(summary.present, 1);
+    assert.equal(summary.absent, 1);
+    // 5 days passed, 2 were leave, so 3 were working days; 2 of those marked.
+    assert.equal(summary.elapsedDays, 3);
+    assert.equal(summary.notMarked, 1);
+  });
+
+  it('keeps leave out of the attendance rate entirely', () => {
+    const allLeave = summariseDates(
+      SEPT_DATES,
+      [day('2026-09-01', 'present'), day('2026-09-02', 'leave'), day('2026-09-03', 'leave')],
+      NO_HOLIDAYS,
+      '2026-09-03',
+    );
+    // One present, nothing absent -> 100%, not penalised for the leave.
+    assert.equal(allLeave.attendanceRate, 100);
+  });
+
   it('handles a month that has not started yet', () => {
     const summary = summariseDates(datesBetweenMonths({ year: 2026, month: 12 }, { year: 2026, month: 12 }), [], NO_HOLIDAYS, '2026-09-25');
     assert.equal(summary.elapsedDays, 0);
@@ -97,6 +133,22 @@ describe('monthly summary', () => {
 
 describe('report rows', () => {
   const employee = { computer_code: 'NP12345', full_name: 'Demo Person' };
+
+  it('labels leave in report rows and totals it separately', () => {
+    const rows = buildReportRows(
+      employee,
+      ['2026-09-01', '2026-09-02', '2026-09-03'],
+      [day('2026-09-01', 'present'), day('2026-09-02', 'leave', 'घर बिदा')],
+    );
+
+    assert.equal(rows[1].status, 'Leave');
+    assert.equal(rows[1].remark, 'घर बिदा');
+
+    const totals = totalsFromRows(rows);
+    assert.equal(totals.leave, 1);
+    assert.equal(totals.absent, 0);
+    assert.equal(totals.notMarked, 1);
+  });
 
   it('emits one row per date, filling gaps with Not Marked', () => {
     const rows = buildReportRows(
@@ -144,6 +196,7 @@ describe('report rows', () => {
       present: 2,
       absent: 1,
       holidays: 0,
+      leave: 0,
       notMarked: 1,
       attendanceRate: 66.67,
     });

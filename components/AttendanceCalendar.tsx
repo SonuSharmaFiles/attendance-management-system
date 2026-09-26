@@ -35,6 +35,7 @@ interface AttendanceCalendarProps {
 const CELL = {
   present: 'bg-present-soft border-green-400 text-present-ink hover:bg-green-200',
   absent: 'bg-absent-soft border-red-400 text-absent-ink hover:bg-red-200',
+  leave: 'bg-leave-soft border-leave text-leave-ink hover:bg-amber-200',
   // Holidays use the same red family as Absent but are visibly not a choice:
   // dashed border, no hover, cursor unchanged.
   holiday: 'bg-absent-soft border-dashed border-red-400 text-absent-ink',
@@ -146,7 +147,9 @@ export function AttendanceCalendar({
                 : record
                   ? record.status === 'present'
                     ? 'Present'
-                    : 'Absent'
+                    : record.status === 'leave'
+                      ? 'Leave'
+                      : 'Absent'
                   : isFuture
                     ? 'Upcoming'
                     : 'Not marked';
@@ -186,13 +189,17 @@ export function AttendanceCalendar({
                   ) : record ? (
                     <>
                       <span aria-hidden className="text-[9px] font-bold leading-none sm:hidden">
-                        {record.status === 'present' ? '✓' : '✕'}
+                        {record.status === 'present' ? '✓' : record.status === 'leave' ? 'L' : '✕'}
                       </span>
                       <span
                         aria-hidden
                         className="hidden text-[8px] font-semibold uppercase leading-tight sm:block"
                       >
-                        {record.status === 'present' ? 'Present' : 'Absent'}
+                        {record.status === 'present'
+                          ? 'Present'
+                          : record.status === 'leave'
+                            ? 'Leave'
+                            : 'Absent'}
                       </span>
                     </>
                   ) : null}
@@ -223,6 +230,10 @@ export function AttendanceCalendar({
             <li className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded border border-red-400 bg-absent-soft" aria-hidden />
               Absent (✕)
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded border border-leave bg-leave-soft" aria-hidden />
+              Leave (L)
             </li>
             <li className="flex items-center gap-1.5">
               <span

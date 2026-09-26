@@ -19,7 +19,12 @@ export const dateStrSchema = z
   .string()
   .refine(isValidDateStr, 'Please provide a valid date in YYYY-MM-DD format.');
 
-export const attendanceStatusSchema = z.enum(['present', 'absent'], {
+export const attendanceStatusSchema = z.enum(['present', 'absent', 'leave'], {
+  message: 'Status must be present, absent or leave.',
+});
+
+/** Staff may only set the two states they are responsible for. */
+export const staffAttendanceStatusSchema = z.enum(['present', 'absent'], {
   message: 'Status must be either present or absent.',
 });
 
@@ -34,7 +39,8 @@ export const remarkSchema = z
 /** Employee-facing: the employee id is taken from the session, never the body. */
 export const markAttendanceSchema = z.object({
   date: dateStrSchema,
-  status: attendanceStatusSchema,
+  // Deliberately the staff-only set: leave is assigned by an administrator.
+  status: staffAttendanceStatusSchema,
   remark: remarkSchema,
 });
 
@@ -178,4 +184,18 @@ export const holidayInputSchema = z
   .refine((v) => !v.endDate || v.endDate >= v.startDate, {
     message: 'The end date must not be before the start date.',
     path: ['endDate'],
+  });
+
+/** An administrator assigning leave across a range of days. */
+export const assignLeaveSchema = z
+  .object({
+    fromDate: dateStrSchema,
+    toDate: dateStrSchema,
+    remark: remarkSchema,
+    /** Clears the days instead of setting them, for undoing a mistake. */
+    clear: z.boolean().optional().default(false),
+  })
+  .refine((value) => value.fromDate <= value.toDate, {
+    message: 'The start date must not be after the end date.',
+    path: ['fromDate'],
   });
