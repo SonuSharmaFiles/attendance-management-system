@@ -70,21 +70,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // A holiday is not a working day, so staff have nothing to mark. An
-    // administrator can still record someone as present if they did work.
+    const existing = await getAttendanceForDate(session.sub, parsed.date);
+
+    // THE ADMIN LOCK, checked FIRST. An administrator may deliberately set a
+    // day that is also a holiday — someone who worked through it. Checking the
+    // holiday first would then report "this is a holiday" when the real reason
+    // is that an administrator set it, which is both less accurate and less
+    // useful to the person reading it.
+    if (existing?.lockedByAdmin) {
+      throw new AppError('Updated by administrator', 423);
+    }
+
+    // Otherwise a holiday is simply not a working day, so there is nothing for
+    // staff to mark.
     const holiday = await isHoliday(parsed.date);
     if (holiday) {
       throw new AppError(
         `${bsLongLabel(toBs(parsed.date))} is a holiday (${holiday.title}). Contact an administrator if this is wrong.`,
         403,
       );
-    }
-
-    const existing = await getAttendanceForDate(session.sub, parsed.date);
-
-    // THE ADMIN LOCK. Once an administrator has set a day, staff cannot change it.
-    if (existing?.lockedByAdmin) {
-      throw new AppError('Updated by administrator', 423);
     }
 
     if (existing && !settings.attendanceEditEnabled) {
