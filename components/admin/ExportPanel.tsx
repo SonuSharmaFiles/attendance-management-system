@@ -5,24 +5,17 @@ import { toast } from 'sonner';
 import { Download, Grid3x3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Input';
-import { BsDatePicker, BsMonthPicker } from '@/components/ui/BsDatePicker';
+import { BsCalendarPicker } from '@/components/ui/BsCalendarPicker';
 import { downloadResponse } from '@/lib/download';
 import { todayInNepal } from '@/lib/date/nepal';
-import {
-  bsDaysInMonth,
-  bsYearMonthFromInput,
-  bsYearMonthOf,
-  bsYearMonthToInput,
-  fromBs,
-  toNepaliNumber,
-} from '@/lib/date/bikram';
+import { bsYearMonthOf, fromBs, toNepaliNumber } from '@/lib/date/bikram';
 import { STAFF_TYPE_LABEL } from '@/lib/config';
 
 /** Admin-side export: whole organisation, one department, or one employee. */
 export function ExportPanel({ departments }: { departments: string[] }) {
-  const thisBsMonth = bsYearMonthToInput(bsYearMonthOf(todayInNepal()));
-  const [fromMonth, setFromMonth] = useState(thisBsMonth);
-  const [toMonth, setToMonth] = useState(thisBsMonth);
+  const thisBsMonth = bsYearMonthOf(todayInNepal());
+  const [fromDate, setFromDate] = useState(() => fromBs({ ...thisBsMonth, day: 1 }));
+  const [toDate, setToDate] = useState(() => todayInNepal());
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [department, setDepartment] = useState('');
   const [includeUnmarked, setIncludeUnmarked] = useState(false);
@@ -35,19 +28,12 @@ export function ExportPanel({ departments }: { departments: string[] }) {
 
   async function handleExport() {
     if (busy) return;
+    if (fromDate > toDate) {
+      toast.error('The first day must not be after the last day.');
+      return;
+    }
     setBusy(true);
     try {
-      const fromBsMonth = bsYearMonthFromInput(fromMonth);
-      const toBsMonth = bsYearMonthFromInput(toMonth);
-      if (!fromBsMonth || !toBsMonth) {
-        toast.error('Please choose a valid month range.');
-        return;
-      }
-      // A Bikram Sambat month begins mid-month in the English calendar, so the
-      // exact days are sent rather than whole English months.
-      const fromDate = fromBs({ ...fromBsMonth, day: 1 });
-      const toDate = fromBs({ ...toBsMonth, day: bsDaysInMonth(toBsMonth) });
-
       const response = await fetch('/api/admin/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,25 +106,23 @@ export function ExportPanel({ departments }: { departments: string[] }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <BsMonthPicker
-          label="From month (देखि)"
-          value={fromMonth}
+        <BsCalendarPicker
+          label="From (देखि)"
+          value={fromDate}
           today={todayInNepal()}
           disabled={busy}
           onChange={(value) => {
-            setFromMonth(value);
-            if (value > toMonth) setToMonth(value);
+            setFromDate(value);
+            if (value > toDate) setToDate(value);
           }}
         />
-        <BsMonthPicker
-          label="To month (सम्म)"
-          value={toMonth}
+        <BsCalendarPicker
+          label="To (सम्म)"
+          value={toDate}
           today={todayInNepal()}
+          min={fromDate}
           disabled={busy}
-          onChange={(value) => {
-            setToMonth(value);
-            if (value < fromMonth) setFromMonth(value);
-          }}
+          onChange={setToDate}
         />
         <Select
           label={STAFF_TYPE_LABEL}
@@ -214,7 +198,7 @@ export function ExportPanel({ departments }: { departments: string[] }) {
 
       {useRange ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <BsDatePicker
+          <BsCalendarPicker
             label="From (देखि)"
             value={gridFrom || todayInNepal()}
             today={todayInNepal()}
@@ -224,15 +208,13 @@ export function ExportPanel({ departments }: { departments: string[] }) {
               if (gridTo && value > gridTo) setGridTo(value);
             }}
           />
-          <BsDatePicker
+          <BsCalendarPicker
             label="To (सम्म)"
             value={gridTo || todayInNepal()}
             today={todayInNepal()}
+            min={gridFrom || undefined}
             disabled={gridBusy}
-            onChange={(value) => {
-              setGridTo(value);
-              if (gridFrom && value < gridFrom) setGridFrom(value);
-            }}
+            onChange={setGridTo}
           />
         </div>
       ) : null}

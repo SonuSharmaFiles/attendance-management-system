@@ -4,18 +4,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { BsMonthPicker } from '@/components/ui/BsDatePicker';
+import { BsCalendarPicker } from '@/components/ui/BsCalendarPicker';
 import { Modal } from '@/components/ui/Modal';
 import { downloadResponse } from '@/lib/download';
 import { todayInNepal } from '@/lib/date/nepal';
-import {
-  bsDaysInMonth,
-  bsMonthLabelNepali,
-  bsYearMonthFromInput,
-  bsYearMonthOf,
-  bsYearMonthToInput,
-  fromBs,
-} from '@/lib/date/bikram';
+import { bsYearMonthOf, fromBs } from '@/lib/date/bikram';
 
 type Format = 'xlsx' | 'csv' | 'pdf';
 
@@ -44,25 +37,19 @@ export function StaffDownloadButton({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const today = todayInNepal();
-  const thisBsMonth = bsYearMonthToInput(bsYearMonthOf(today));
-  const [fromMonth, setFromMonth] = useState(thisBsMonth);
-  const [toMonth, setToMonth] = useState(thisBsMonth);
+  // Defaults to the Nepali month containing today, but any two days can be
+  // picked — the range is exact, not whole months.
+  const thisBsMonth = bsYearMonthOf(today);
+  const [fromDate, setFromDate] = useState(() => fromBs({ ...thisBsMonth, day: 1 }));
+  const [toDate, setToDate] = useState(today);
   const [format, setFormat] = useState<Format>('xlsx');
 
   async function handleDownload() {
     if (busy) return;
-    // Turn the Bikram Sambat months into the exact Gregorian days they cover.
-    // A BS month starts mid-month in the English calendar, so sending whole
-    // English months would pull in days from the neighbouring Nepali months.
-    const fromBsMonth = bsYearMonthFromInput(fromMonth);
-    const toBsMonth = bsYearMonthFromInput(toMonth);
-    if (!fromBsMonth || !toBsMonth) {
-      toast.error('Please choose a valid month range.');
+    if (fromDate > toDate) {
+      toast.error('The first day must not be after the last day.');
       return;
     }
-
-    const fromDate = fromBs({ ...fromBsMonth, day: 1 });
-    const toDate = fromBs({ ...toBsMonth, day: bsDaysInMonth(toBsMonth) });
 
     setBusy(true);
     try {
@@ -124,33 +111,23 @@ export function StaffDownloadButton({
       >
         <div className="space-y-4">
           <div className="space-y-4">
-            <BsMonthPicker
-              label="From month (देखि)"
-              value={fromMonth}
+            <BsCalendarPicker
+              label="From (देखि)"
+              value={fromDate}
               today={today}
               disabled={busy}
               onChange={(value) => {
-                setFromMonth(value);
-                if (value > toMonth) setToMonth(value);
+                setFromDate(value);
+                if (value > toDate) setToDate(value);
               }}
-              hint={(() => {
-                const m = bsYearMonthFromInput(fromMonth);
-                return m ? bsMonthLabelNepali(m) : '';
-              })()}
             />
-            <BsMonthPicker
-              label="To month (सम्म)"
-              value={toMonth}
+            <BsCalendarPicker
+              label="To (सम्म)"
+              value={toDate}
               today={today}
+              min={fromDate}
               disabled={busy}
-              onChange={(value) => {
-                setToMonth(value);
-                if (value < fromMonth) setFromMonth(value);
-              }}
-              hint={(() => {
-                const m = bsYearMonthFromInput(toMonth);
-                return m ? bsMonthLabelNepali(m) : '';
-              })()}
+              onChange={setToDate}
             />
           </div>
 

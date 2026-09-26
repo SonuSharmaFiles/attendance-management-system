@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Plane } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
-import { BsDatePicker } from '@/components/ui/BsDatePicker';
+import { BsCalendarPicker } from '@/components/ui/BsCalendarPicker';
 import { Modal } from '@/components/ui/Modal';
 import { MAX_REMARK_LENGTH } from '@/lib/config';
 import { todayInNepal } from '@/lib/date/nepal';
@@ -98,7 +98,7 @@ export function AssignLeaveButton({
       >
         <div className="space-y-4">
           <div className="space-y-4">
-            <BsDatePicker
+            <BsCalendarPicker
               label="First day (पहिलो दिन)"
               value={fromDate}
               today={today}
@@ -109,15 +109,13 @@ export function AssignLeaveButton({
                 if (value > toDate) setToDate(value);
               }}
             />
-            <BsDatePicker
+            <BsCalendarPicker
               label="Last day (अन्तिम दिन)"
               value={toDate}
               today={today}
+              min={fromDate}
               disabled={busy}
-              onChange={(value) => {
-                setToDate(value);
-                if (value < fromDate) setFromDate(value);
-              }}
+              onChange={setToDate}
             />
           </div>
 
