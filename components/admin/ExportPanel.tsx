@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { downloadResponse } from '@/components/DownloadAttendance';
 import { currentYearMonth, todayInNepal, yearMonthToInput } from '@/lib/date/nepal';
-import { bsYearMonthOf, toNepaliNumber } from '@/lib/date/bikram';
+import { bsLongLabelNepali, bsYearMonthOf, toBs, toNepaliNumber } from '@/lib/date/bikram';
 import { STAFF_TYPE_LABEL } from '@/lib/config';
 
 /** Admin-side export: whole organisation, one department, or one employee. */
@@ -21,6 +21,8 @@ export function ExportPanel({ departments }: { departments: string[] }) {
   const [busy, setBusy] = useState(false);
   const [gridBusy, setGridBusy] = useState(false);
   const [bsYear, setBsYear] = useState(() => bsYearMonthOf(todayInNepal()).year);
+  const [gridFrom, setGridFrom] = useState('');
+  const [gridTo, setGridTo] = useState('');
 
   async function handleExport() {
     if (busy) return;
@@ -65,7 +67,12 @@ export function ExportPanel({ departments }: { departments: string[] }) {
       const response = await fetch('/api/admin/export/year-grid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bsYear, department: department || undefined }),
+        body: JSON.stringify({
+          bsYear,
+          department: department || undefined,
+          fromDate: gridFrom || undefined,
+          toDate: gridTo || undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -84,6 +91,15 @@ export function ExportPanel({ departments }: { departments: string[] }) {
   }
 
   const thisBsYear = bsYearMonthOf(todayInNepal()).year;
+
+  /** Shows the Nepali equivalent under a date box, so the range is unambiguous. */
+  function nepaliHint(value: string) {
+    try {
+      return bsLongLabelNepali(toBs(value));
+    } catch {
+      return '';
+    }
+  }
 
   return (
     <>
@@ -163,6 +179,27 @@ export function ExportPanel({ departments }: { departments: string[] }) {
         </p>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input
+          label="From date (optional)"
+          type="date"
+          value={gridFrom}
+          max={gridTo || undefined}
+          onChange={(event) => setGridFrom(event.target.value)}
+          disabled={gridBusy}
+          hint={gridFrom ? nepaliHint(gridFrom) : 'Leave blank to start from the first day.'}
+        />
+        <Input
+          label="To date (optional)"
+          type="date"
+          value={gridTo}
+          min={gridFrom || undefined}
+          onChange={(event) => setGridTo(event.target.value)}
+          disabled={gridBusy}
+          hint={gridTo ? nepaliHint(gridTo) : 'Leave blank to run to the last day.'}
+        />
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Select
           label="Nepali year"
@@ -193,7 +230,7 @@ export function ExportPanel({ departments }: { departments: string[] }) {
 
       <Button onClick={handleYearGrid} loading={gridBusy}>
         <Grid3x3 aria-hidden className="h-4 w-4" />
-        {gridBusy ? 'Building…' : 'Download Year Grid'}
+        {gridBusy ? 'Building…' : gridFrom || gridTo ? 'Download Selected Range' : 'Download Whole Year'}
       </Button>
     </section>
     </>

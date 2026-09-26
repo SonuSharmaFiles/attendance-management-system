@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateStrSchema } from '@/lib/validation/schemas';
 import { requireAdmin } from '@/lib/auth/admin';
 import { buildYearGridWorkbook, type GridStaff } from '@/lib/excel/year-grid';
 import { getHolidaysForDates } from '@/lib/holidays/queries';
@@ -11,11 +12,19 @@ import type { AttendanceStatus } from '@/types/attendance';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const requestSchema = z.object({
-  bsYear: z.coerce.number().int().min(2000).max(2100),
-  department: z.string().trim().max(120).optional(),
-  employeeId: z.string().uuid().optional(),
-});
+const requestSchema = z
+  .object({
+    bsYear: z.coerce.number().int().min(2000).max(2100),
+    department: z.string().trim().max(120).optional(),
+    employeeId: z.string().uuid().optional(),
+    // Omitted by the scheduled backup, which always wants the whole year.
+    fromDate: z.union([dateStrSchema, z.literal('')]).optional().transform((v) => v || undefined),
+    toDate: z.union([dateStrSchema, z.literal('')]).optional().transform((v) => v || undefined),
+  })
+  .refine((v) => !v.fromDate || !v.toDate || v.fromDate <= v.toDate, {
+    message: 'The start date must not be after the end date.',
+    path: ['fromDate'],
+  });
 
 /**
  * POST /api/admin/export/year-grid
@@ -79,12 +88,19 @@ export async function POST(request: Request) {
       attendance,
       holidays,
       today: todayInNepal(),
+      fromDate: input.fromDate,
+      toDate: input.toDate,
     });
+
+    const suffix =
+      input.fromDate || input.toDate
+        ? `-${input.fromDate ?? 'start'}-to-${input.toDate ?? 'end'}`
+        : '';
 
     return new Response(workbook as BodyInit, {
       headers: {
         'Content-Type': CONTENT_TYPES.xlsx,
-        'Content-Disposition': `attachment; filename="attendance-${input.bsYear}-BS.xlsx"`,
+        'Content-Disposition': `attachment; filename="attendance-${input.bsYear}-BS${suffix}.xlsx"`,
         'Cache-Control': 'no-store',
       },
     });

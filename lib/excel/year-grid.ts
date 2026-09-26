@@ -31,6 +31,13 @@ export interface GridInput {
   holidays: Map<DateStr, CalendarHoliday>;
   /** Days after this are left blank rather than guessed at. */
   today: DateStr;
+  /**
+   * Optional window. Only days inside it become columns, and each month header
+   * then spans only its own included days. Leaving both out gives the whole
+   * Nepali year, which is what the scheduled backup wants.
+   */
+  fromDate?: DateStr;
+  toDate?: DateStr;
 }
 
 interface DayColumn {
@@ -45,12 +52,14 @@ const NAVY_EVEN = 'FF2B4878';
 const FILL = { P: 'FFDCFCE7', A: 'FFFEE2E2', H: 'FFF1F5F9' } as const;
 const INK = { P: 'FF14532D', A: 'FF7F1D1D', H: 'FF64748B' } as const;
 
-function buildColumns(bsYear: number): DayColumn[] {
+function buildColumns(bsYear: number, fromDate?: DateStr, toDate?: DateStr): DayColumn[] {
   const columns: DayColumn[] = [];
   for (let month = 1; month <= 12; month += 1) {
     const total = bsDaysInMonth({ year: bsYear, month });
     for (let bsDay = 1; bsDay <= total; bsDay += 1) {
       const date = fromBs({ year: bsYear, month, day: bsDay });
+      if (fromDate && date < fromDate) continue;
+      if (toDate && date > toDate) continue;
       const { year, month: gMonth, day } = parseDateStr(date);
       columns.push({ month, bsDay, date, weekday: dayOfWeek(year, gMonth, day) });
     }
@@ -59,8 +68,11 @@ function buildColumns(bsYear: number): DayColumn[] {
 }
 
 export async function buildYearGridWorkbook(input: GridInput): Promise<Buffer> {
-  const { bsYear, staff, attendance, holidays, today } = input;
-  const columns = buildColumns(bsYear);
+  const { bsYear, staff, attendance, holidays, today, fromDate, toDate } = input;
+  const columns = buildColumns(bsYear, fromDate, toDate);
+  if (columns.length === 0) {
+    throw new Error('That date range contains no days of this Nepali year.');
+  }
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Attendance Management System';
@@ -75,10 +87,12 @@ export async function buildYearGridWorkbook(input: GridInput): Promise<Buffer> {
   sheet.addRow(['Code', 'Name', ...columns.map((c) => c.bsDay)]);
   sheet.addRow(['', '', ...columns.map((c) => WEEKDAY_SHORT[c.weekday])]);
 
-  // Merge each month across exactly its own number of days.
+  // Merge each month across exactly the days included — which, with a date
+  // range, may be only part of that month.
   let at = 3;
   for (let month = 1; month <= 12; month += 1) {
-    const span = bsDaysInMonth({ year: bsYear, month });
+    const span = columns.filter((column) => column.month === month).length;
+    if (span === 0) continue;
     sheet.mergeCells(1, at, 1, at + span - 1);
     const cell = sheet.getCell(1, at);
     cell.value = BS_MONTHS_NEPALI[month - 1];
