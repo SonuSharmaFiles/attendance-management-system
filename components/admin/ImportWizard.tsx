@@ -213,7 +213,6 @@ export function ImportWizard() {
           {/* A real browser navigation, not next/link: this endpoint returns a
               file, and a client-side navigation would fetch the route payload
               instead of downloading anything. */}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/api/admin/employees/import/template"
             download
