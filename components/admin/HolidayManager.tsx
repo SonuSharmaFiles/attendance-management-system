@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TableSkeleton } from '@/components/LoadingState';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { describeRule, type HolidayRule } from '@/lib/holidays/rules';
 import { BS_WEEKDAYS_NEPALI, bsLongLabelNepali, toBs } from '@/lib/date/bikram';
 import { todayInNepal } from '@/lib/date/nepal';
@@ -55,6 +56,7 @@ export function HolidayManager() {
   const [editing, setEditing] = useState<HolidayRule | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<HolidayRule | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,13 +162,6 @@ export function HolidayManager() {
 
   async function remove(rule: HolidayRule) {
     if (pendingId) return;
-    if (
-      !window.confirm(
-        `Delete "${rule.title}" permanently?\n\nThis only removes the holiday rule. No attendance records are deleted.`,
-      )
-    ) {
-      return;
-    }
     setPendingId(rule.id);
     try {
       const response = await fetch(`/api/admin/holidays/${rule.id}`, { method: 'DELETE' });
@@ -178,6 +173,7 @@ export function HolidayManager() {
       await load();
     } finally {
       setPendingId(null);
+      setConfirming(null);
     }
   }
 
@@ -261,7 +257,7 @@ export function HolidayManager() {
                     variant="ghost"
                     aria-label={`Delete ${rule.title}`}
                     loading={pendingId === rule.id}
-                    onClick={() => remove(rule)}
+                    onClick={() => setConfirming(rule)}
                   >
                     <Trash2 aria-hidden className="h-4 w-4" />
                   </Button>
@@ -271,6 +267,29 @@ export function HolidayManager() {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={Boolean(confirming)}
+        tone="danger"
+        title={confirming ? `Delete "${confirming.title}"?` : ''}
+        message={
+          confirming
+            ? `This holiday rule will be removed for every staff member: ${describeRule(confirming)}.`
+            : ''
+        }
+        details={[
+          'Those days stop being holidays and become ordinary working days.',
+          'No attendance records are deleted.',
+          'To keep the rule but stop it applying, use "Switch off" instead.',
+        ]}
+        confirmLabel="Delete holiday"
+        cancelLabel="Keep it"
+        busy={Boolean(pendingId)}
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => {
+          if (confirming) void remove(confirming);
+        }}
+      />
 
       <Modal
         open={open}

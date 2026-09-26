@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { TableSkeleton } from '@/components/LoadingState';
 import { EmployeeFormModal } from '@/components/admin/EmployeeFormModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { Employee } from '@/types/employee';
 
 const PAGE_SIZE = 25;
@@ -23,6 +24,8 @@ export function EmployeeManager() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
+  /** The staff member awaiting confirmation of removal. */
+  const [confirming, setConfirming] = useState<Employee | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,21 +63,13 @@ export function EmployeeManager() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  function requestRemove(employee: Employee) {
+    if (pendingId) return;
+    setConfirming(employee);
+  }
+
   async function setActive(employee: Employee, active: boolean) {
     if (pendingId) return;
-
-    if (
-      !active &&
-      !window.confirm(
-        `Remove ${employee.full_name} from the active staff list?\n\n` +
-          `They will no longer be able to sign in, and they disappear from the list.\n\n` +
-          `Nothing is destroyed: their record and all their attendance are kept, and you can ` +
-          `bring them back at any time by switching Status to "Deactivated".`,
-      )
-    ) {
-      return;
-    }
-
     setPendingId(employee.id);
     try {
       const response = active
@@ -102,6 +97,7 @@ export function EmployeeManager() {
       toast.error('Unable to reach the server. Please check your connection.');
     } finally {
       setPendingId(null);
+      setConfirming(null);
     }
   }
 
@@ -204,7 +200,9 @@ export function EmployeeManager() {
                     size="sm"
                     variant="ghost"
                     loading={pendingId === employee.id}
-                    onClick={() => setActive(employee, !employee.is_active)}
+                    onClick={() =>
+                      employee.is_active ? requestRemove(employee) : setActive(employee, true)
+                    }
                   >
                     {employee.is_active ? 'Remove' : 'Restore'}
                   </Button>
@@ -275,7 +273,9 @@ export function EmployeeManager() {
                           variant="ghost"
                           loading={pendingId === employee.id}
                           aria-label={`${employee.is_active ? 'Remove' : 'Restore'} ${employee.full_name}`}
-                          onClick={() => setActive(employee, !employee.is_active)}
+                          onClick={() =>
+                            employee.is_active ? requestRemove(employee) : setActive(employee, true)
+                          }
                         >
                           {employee.is_active ? (
                             <Trash2 aria-hidden className="h-4 w-4" />
@@ -322,6 +322,30 @@ export function EmployeeManager() {
         employee={editing}
         onClose={() => setModalOpen(false)}
         onSaved={load}
+      />
+
+      <ConfirmDialog
+        open={Boolean(confirming)}
+        tone="danger"
+        title={confirming ? `Remove ${confirming.full_name}?` : ''}
+        message={
+          confirming
+            ? `${confirming.full_name} (${confirming.computer_code}) will be removed from the active staff list.`
+            : ''
+        }
+        details={[
+          'They will no longer be able to sign in with their computer code.',
+          'They disappear from this list, but nothing is destroyed.',
+          'Their record and all their attendance are kept.',
+          'To bring them back, set Status to "Deactivated" and press Restore.',
+        ]}
+        confirmLabel="Remove from list"
+        cancelLabel="Keep them"
+        busy={Boolean(pendingId)}
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => {
+          if (confirming) void setActive(confirming, false);
+        }}
       />
     </div>
   );
