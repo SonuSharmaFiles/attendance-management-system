@@ -11,15 +11,22 @@ import { AttendanceModal } from '@/components/AttendanceModal';
 import { MonthlySummary } from '@/components/MonthlySummary';
 import { DownloadAttendance } from '@/components/DownloadAttendance';
 import { LoadingRegion } from '@/components/LoadingState';
-import { summariseMonth } from '@/lib/attendance/summary';
-import { addMonths, monthLabel, type DateStr, type YearMonth } from '@/lib/date/nepal';
-import type { AttendanceDay, AttendanceStatus } from '@/types/attendance';
+import { summariseDates } from '@/lib/attendance/summary';
+import type { DateStr } from '@/lib/date/nepal';
+import {
+  addBsMonths,
+  bsMonthDates,
+  bsMonthLabel,
+  type BsYearMonth,
+} from '@/lib/date/bikram';
+import type { AttendanceDay, AttendanceStatus, CalendarHoliday } from '@/types/attendance';
 import type { EmployeePublic } from '@/types/employee';
 
 interface EmployeeDashboardProps {
   employee: EmployeePublic;
-  initialMonth: YearMonth;
+  initialMonth: BsYearMonth;
   initialDays: AttendanceDay[];
+  initialHolidays: CalendarHoliday[];
   today: DateStr;
   organisationName: string;
   settings: { attendanceEditEnabled: boolean; allowFutureAttendance: boolean };
@@ -29,29 +36,39 @@ export function EmployeeDashboard({
   employee,
   initialMonth,
   initialDays,
+  initialHolidays,
   today,
   organisationName,
   settings,
 }: EmployeeDashboardProps) {
   const router = useRouter();
-  const [yearMonth, setYearMonth] = useState<YearMonth>(initialMonth);
+  const [yearMonth, setYearMonth] = useState<BsYearMonth>(initialMonth);
   const [days, setDays] = useState<AttendanceDay[]>(initialDays);
+  const [holidays, setHolidays] = useState<CalendarHoliday[]>(initialHolidays);
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [selectedDate, setSelectedDate] = useState<DateStr | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const summary = useMemo(() => summariseMonth(yearMonth, days, today), [yearMonth, days, today]);
-  const label = monthLabel(yearMonth);
+  const holidayMap = useMemo(
+    () => new Map(holidays.map((holiday) => [holiday.date, holiday])),
+    [holidays],
+  );
+  const summary = useMemo(
+    () => summariseDates(bsMonthDates(yearMonth), days, holidayMap, today),
+    [yearMonth, days, holidayMap, today],
+  );
+  const label = bsMonthLabel(yearMonth);
 
   /** Loads exactly one month for this employee — never the whole history. */
-  const loadMonth = useCallback(async (target: YearMonth) => {
+  const loadMonth = useCallback(async (target: BsYearMonth) => {
     setLoadingMonth(true);
     try {
-      const response = await fetch(`/api/attendance?year=${target.year}&month=${target.month}`, {
-        cache: 'no-store',
-      });
+      const response = await fetch(
+        `/api/attendance?bsYear=${target.year}&bsMonth=${target.month}`,
+        { cache: 'no-store' },
+      );
       const payload = (await response.json().catch(() => null)) as
-        | { ok: true; data: { days: AttendanceDay[] } }
+        | { ok: true; data: { days: AttendanceDay[]; holidays: CalendarHoliday[] } }
         | { ok: false; error: string }
         | null;
 
@@ -63,6 +80,7 @@ export function EmployeeDashboard({
       }
 
       setDays(payload.data.days);
+      setHolidays(payload.data.holidays);
       return true;
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');
@@ -74,7 +92,7 @@ export function EmployeeDashboard({
 
   async function handleChangeMonth(delta: number) {
     if (loadingMonth) return;
-    const target = addMonths(yearMonth, delta);
+    const target = addBsMonths(yearMonth, delta);
     setYearMonth(target);
     await loadMonth(target);
   }
@@ -99,6 +117,14 @@ export function EmployeeDashboard({
         if (response.status === 401) {
           toast.error('Your session has expired. Please enter your code again.');
           router.push('/');
+          return;
+        }
+        if (response.status === 423) {
+          // Locked by an administrator.
+          toast.error('Updated by administrator', {
+            description: 'This day was set by an administrator and cannot be changed here.',
+          });
+          setSelectedDate(null);
           return;
         }
         toast.error(
@@ -162,6 +188,7 @@ export function EmployeeDashboard({
         <AttendanceCalendar
           yearMonth={yearMonth}
           days={days}
+          holidays={holidayMap}
           today={today}
           loading={loadingMonth}
           allowFuture={settings.allowFutureAttendance}
@@ -179,6 +206,7 @@ export function EmployeeDashboard({
       <AttendanceModal
         date={selectedDate}
         existing={existing}
+        holiday={selectedDate ? (holidayMap.get(selectedDate) ?? null) : null}
         saving={saving}
         editEnabled={settings.attendanceEditEnabled}
         onClose={() => {

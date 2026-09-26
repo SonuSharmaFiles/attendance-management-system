@@ -17,7 +17,7 @@ export async function getAttendanceRange(
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from('attendance')
-    .select('attendance_date, status, remark')
+    .select('attendance_date, status, remark, locked_by_admin')
     .eq('employee_id', employeeId)
     .gte('attendance_date', from)
     .lte('attendance_date', to)
@@ -29,6 +29,7 @@ export async function getAttendanceRange(
     date: row.attendance_date as DateStr,
     status: row.status as AttendanceStatus,
     remark: (row.remark as string | null) ?? null,
+    lockedByAdmin: Boolean(row.locked_by_admin),
   }));
 }
 
@@ -52,6 +53,8 @@ export async function upsertAttendance(params: {
   date: DateStr;
   status: AttendanceStatus;
   remark: string | null;
+  /** True when an administrator is writing; locks the row against staff edits. */
+  lockedByAdmin?: boolean;
 }): Promise<AttendanceDay> {
   const supabase = getServiceClient();
   const { data, error } = await supabase
@@ -63,10 +66,11 @@ export async function upsertAttendance(params: {
         status: params.status,
         // A present day never keeps a stale absence reason.
         remark: params.status === 'absent' ? params.remark : null,
+        locked_by_admin: params.lockedByAdmin ?? false,
       },
       { onConflict: 'employee_id,attendance_date' },
     )
-    .select('attendance_date, status, remark')
+    .select('attendance_date, status, remark, locked_by_admin')
     .single();
 
   if (error) throw new AppError(describeDbError(error), 400);
@@ -75,6 +79,7 @@ export async function upsertAttendance(params: {
     date: data.attendance_date as DateStr,
     status: data.status as AttendanceStatus,
     remark: (data.remark as string | null) ?? null,
+    lockedByAdmin: Boolean(data.locked_by_admin),
   };
 }
 

@@ -13,6 +13,7 @@ import {
   yearMonthFromInput,
 } from '@/lib/date/nepal';
 import type { AttendanceReportRow } from '@/types/attendance';
+import { getHolidaysForDates } from '@/lib/holidays/queries';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -86,10 +87,27 @@ export async function POST(request: Request) {
       });
     }
 
+    const holidays = await getHolidaysForDates(allDates);
+
     const rows: AttendanceReportRow[] = [];
     for (const employee of employees) {
       for (const date of allDates) {
         const record = byEmployeeDate.get(`${employee.id}|${date}`);
+        const holiday = holidays.get(date);
+
+        // A holiday with nothing recorded is a holiday, not a missing entry.
+        if (!record && holiday) {
+          rows.push({
+            computerCode: employee.computer_code as string,
+            fullName: employee.full_name as string,
+            date,
+            day: dayName(date),
+            status: 'Holiday',
+            remark: holiday.title,
+          });
+          continue;
+        }
+
         if (!record && !input.includeUnmarked) continue;
         rows.push({
           computerCode: employee.computer_code as string,

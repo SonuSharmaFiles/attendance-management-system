@@ -8,6 +8,8 @@ export interface AttendanceRecord {
   attendance_date: DateStr;
   status: AttendanceStatus;
   remark: string | null;
+  /** Set by an administrator; staff cannot change it. */
+  locked_by_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +19,14 @@ export interface AttendanceDay {
   date: DateStr;
   status: AttendanceStatus;
   remark: string | null;
+  /** An administrator set this day; staff see "Updated by administrator". */
+  lockedByAdmin: boolean;
+}
+
+/** A day made a holiday by one of the admin's holiday rules. */
+export interface CalendarHoliday {
+  date: DateStr;
+  title: string;
 }
 
 export interface MonthlySummary {
@@ -24,7 +34,9 @@ export interface MonthlySummary {
   present: number;
   absent: number;
   notMarked: number;
-  /** Days that have happened so far this month (future days excluded). */
+  /** Days covered by a holiday rule. Never counted as present or absent. */
+  holidays: number;
+  /** Working days that have happened so far (future and holidays excluded). */
   elapsedDays: number;
   attendanceRate: number;
 }
@@ -34,6 +46,6 @@ export interface AttendanceReportRow {
   fullName: string;
   date: DateStr;
   day: string;
-  status: 'Present' | 'Absent' | 'Not Marked';
+  status: 'Present' | 'Absent' | 'Not Marked' | 'Holiday';
   remark: string;
 }

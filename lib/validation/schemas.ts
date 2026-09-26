@@ -151,3 +151,31 @@ export const adminAccountUpdateSchema = z
     message: 'Enter a new email address or a new password.',
     path: ['newEmail'],
   });
+
+/** Creating or editing a holiday rule. */
+export const holidayInputSchema = z
+  .object({
+    title: z.string().trim().min(2, 'Give the holiday a name.').max(80),
+    note: z.string().trim().max(200).optional().nullable().transform((v) => (v ? v : null)),
+    recurrence: z.enum(['once', 'weekly', 'monthly'], {
+      message: 'Choose how often this holiday repeats.',
+    }),
+    weekday: z.coerce.number().int().min(0).max(6).optional().nullable(),
+    bsDay: z.coerce.number().int().min(1).max(32).optional().nullable(),
+    startDate: dateStrSchema,
+    endDate: z.union([dateStrSchema, z.literal('')]).optional().nullable()
+      .transform((v) => (v ? v : null)),
+    isActive: z.boolean().optional().default(true),
+  })
+  .refine((v) => v.recurrence !== 'weekly' || v.weekday !== null && v.weekday !== undefined, {
+    message: 'Choose which day of the week.',
+    path: ['weekday'],
+  })
+  .refine((v) => v.recurrence !== 'monthly' || v.bsDay !== null && v.bsDay !== undefined, {
+    message: 'Choose which day of the Nepali month.',
+    path: ['bsDay'],
+  })
+  .refine((v) => !v.endDate || v.endDate >= v.startDate, {
+    message: 'The end date must not be before the start date.',
+    path: ['endDate'],
+  });

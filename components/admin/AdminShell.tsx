@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CalendarCheck, LayoutDashboard, LogOut, UserCog, Upload, Users } from 'lucide-react';
+import { CalendarCheck, CalendarOff, LayoutDashboard, LogOut, UserCog, Upload, Users } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -11,6 +11,7 @@ const NAV = [
   { href: '/admin/employees', label: 'Employees', Icon: Users, exact: true },
   { href: '/admin/employees/import', label: 'Import', Icon: Upload, exact: true },
   { href: '/admin/attendance', label: 'Attendance', Icon: CalendarCheck, exact: true },
+  { href: '/admin/holidays', label: 'Holidays', Icon: CalendarOff, exact: true },
   { href: '/admin/account', label: 'My Account', Icon: UserCog, exact: true },
 ];
 

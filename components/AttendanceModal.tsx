@@ -1,18 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, Lock, PartyPopper, X } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { longDateLabel, type DateStr } from '@/lib/date/nepal';
+import { type DateStr } from '@/lib/date/nepal';
+import { bsLongLabel, toBs } from '@/lib/date/bikram';
 import { MAX_REMARK_LENGTH } from '@/lib/config';
-import type { AttendanceDay, AttendanceStatus } from '@/types/attendance';
+import type { AttendanceDay, AttendanceStatus, CalendarHoliday } from '@/types/attendance';
 
 interface AttendanceModalProps {
   date: DateStr | null;
   existing: AttendanceDay | null;
+  holiday?: CalendarHoliday | null;
   saving: boolean;
   editEnabled: boolean;
   onClose: () => void;
@@ -32,6 +34,7 @@ export function AttendanceModal(props: AttendanceModalProps) {
 function AttendanceDialog({
   date,
   existing,
+  holiday,
   saving,
   editEnabled,
   onClose,
@@ -43,22 +46,51 @@ function AttendanceDialog({
     existing?.status === 'absent' ? (existing.remark ?? '') : '',
   );
 
-  const locked = Boolean(existing) && !editEnabled;
+  // Three separate reasons a day may be read-only, each with its own message.
+  const adminLocked = Boolean(existing?.lockedByAdmin);
+  const isHoliday = Boolean(holiday);
+  const locked = adminLocked || isHoliday || (Boolean(existing) && !editEnabled);
 
   return (
     <Modal
       open
       onClose={onClose}
       busy={saving}
-      title={`Attendance — ${longDateLabel(date)}`}
+      title={`Attendance — ${bsLongLabel(toBs(date))}`}
       description={
-        locked
-          ? 'This entry has been submitted and can no longer be changed.'
-          : existing
-            ? 'You can change this entry below.'
-            : 'Select your attendance for this date.'
+        isHoliday
+          ? `${date} in the English calendar.`
+          : adminLocked
+            ? 'Updated by administrator'
+            : locked
+              ? 'This entry has been submitted and can no longer be changed.'
+              : existing
+                ? 'You can change this entry below.'
+                : `Select your attendance for this date. (${date})`
       }
     >
+      {isHoliday ? (
+        <p className="mb-4 flex items-start gap-2 rounded-xl bg-absent-soft px-3 py-3 text-sm text-absent-ink">
+          <PartyPopper aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <span className="font-semibold">Holiday — {holiday?.title}</span>
+            <span className="mt-0.5 block text-xs">
+              There is no attendance to mark on a holiday.
+            </span>
+          </span>
+        </p>
+      ) : adminLocked ? (
+        <p className="mb-4 flex items-start gap-2 rounded-xl bg-navy-50 px-3 py-3 text-sm text-navy-900">
+          <Lock aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <span className="font-semibold">Updated by administrator</span>
+            <span className="mt-0.5 block text-xs">
+              An administrator set this day. Contact them if it needs changing.
+            </span>
+          </span>
+        </p>
+      ) : null}
+
       {existing ? (
         <p className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
           <span className="font-medium">Current Status:</span>

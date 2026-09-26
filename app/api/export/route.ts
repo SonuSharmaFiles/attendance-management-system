@@ -2,6 +2,7 @@ import { getEmployeeSession } from '@/lib/auth/employee-session';
 import { getEmployeeById } from '@/lib/employees/queries';
 import { getAttendanceRange } from '@/lib/attendance/queries';
 import { buildReportRows } from '@/lib/attendance/summary';
+import { getHolidaysForDates } from '@/lib/holidays/queries';
 import { buildAttendanceWorkbook, rowsToCsv } from '@/lib/excel/export';
 import { buildAttendancePdf } from '@/lib/pdf/report';
 import {
@@ -55,7 +56,9 @@ export async function POST(request: Request) {
     const today = todayInNepal();
     const dates = datesBetweenMonths(from, to).filter((date) => date <= today);
 
-    const rows = buildReportRows(employee, dates, records);
+    // Without this, every Saturday would read "Not Marked" in the report.
+    const holidays = await getHolidaysForDates(dates);
+    const rows = buildReportRows(employee, dates, records, { holidays });
     const label = periodLabel(from, to);
     const format = parsed.format as ExportFormat;
     const filename = attendanceFilename(employee.computer_code, from, to, format);

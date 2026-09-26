@@ -1,21 +1,21 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { compareDateStr, parseDateStr, type DateStr } from '@/lib/date/nepal';
 import {
-  buildMonthGrid,
-  compareDateStr,
-  monthLabel,
-  parseDateStr,
-  WEEKDAY_SHORT,
-  type DateStr,
-  type YearMonth,
-} from '@/lib/date/nepal';
-import type { AttendanceDay } from '@/types/attendance';
+  BS_WEEKDAYS,
+  BS_WEEKDAYS_SHORT,
+  bsMonthLabel,
+  buildBsMonthGrid,
+  type BsYearMonth,
+} from '@/lib/date/bikram';
+import type { AttendanceDay, CalendarHoliday } from '@/types/attendance';
 import { CalendarSkeleton } from '@/components/LoadingState';
 
 interface AttendanceCalendarProps {
-  yearMonth: YearMonth;
+  yearMonth: BsYearMonth;
   days: AttendanceDay[];
+  holidays: Map<DateStr, CalendarHoliday>;
   today: DateStr;
   loading: boolean;
   allowFuture: boolean;
@@ -23,9 +23,12 @@ interface AttendanceCalendarProps {
   onChangeMonth: (delta: number) => void;
 }
 
-const CELL_STYLES = {
+const CELL = {
   present: 'bg-present-soft border-green-400 text-present-ink hover:bg-green-200',
   absent: 'bg-absent-soft border-red-400 text-absent-ink hover:bg-red-200',
+  // Holidays use the same red family as Absent but are visibly not a choice:
+  // dashed border, no hover, cursor unchanged.
+  holiday: 'bg-absent-soft border-dashed border-red-400 text-absent-ink cursor-not-allowed',
   unmarked: 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100',
   future: 'bg-slate-50 border-dashed border-slate-200 text-slate-400',
 } as const;
@@ -33,14 +36,15 @@ const CELL_STYLES = {
 export function AttendanceCalendar({
   yearMonth,
   days,
+  holidays,
   today,
   loading,
   allowFuture,
   onSelectDate,
   onChangeMonth,
 }: AttendanceCalendarProps) {
-  const label = monthLabel(yearMonth);
-  const cells = buildMonthGrid(yearMonth);
+  const label = bsMonthLabel(yearMonth);
+  const cells = buildBsMonthGrid(yearMonth);
   const byDate = new Map(days.map((day) => [day.date, day]));
 
   return (
@@ -56,8 +60,9 @@ export function AttendanceCalendar({
           <span className="hidden sm:inline">Previous</span>
         </button>
 
-        <h2 aria-live="polite" className="text-center text-base font-bold text-navy-900 sm:text-lg">
-          {label}
+        <h2 aria-live="polite" className="text-center">
+          <span className="block text-base font-bold text-navy-900 sm:text-lg">{label}</span>
+          <span className="block text-[11px] font-normal text-slate-500">Bikram Sambat</span>
         </h2>
 
         <button
@@ -76,40 +81,50 @@ export function AttendanceCalendar({
       ) : (
         <>
           <div className="grid grid-cols-7 gap-1.5 sm:gap-2" aria-hidden>
-            {WEEKDAY_SHORT.map((day) => (
+            {BS_WEEKDAYS.map((day, index) => (
               <div
                 key={day}
-                className="pb-1 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs"
+                className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs"
               >
-                <span className="sm:hidden">{day[0]}</span>
+                <span className="sm:hidden">{BS_WEEKDAYS_SHORT[index]}</span>
                 <span className="hidden sm:inline">{day}</span>
               </div>
             ))}
           </div>
 
           <div role="grid" className="grid grid-cols-7 gap-1.5 sm:gap-2">
-            {cells.map((date, index) => {
-              if (!date) {
+            {cells.map((cell, index) => {
+              if (!cell) {
                 return <div key={`pad-${index}`} role="presentation" className="aspect-square" />;
               }
 
+              const { date, bsDay } = cell;
               const record = byDate.get(date);
+              const holiday = holidays.get(date);
               const isFuture = compareDateStr(date, today) > 0;
               const isToday = date === today;
-              const disabled = isFuture && !allowFuture;
-              const tone = record
-                ? CELL_STYLES[record.status]
-                : isFuture
-                  ? CELL_STYLES.future
-                  : CELL_STYLES.unmarked;
+              const locked = Boolean(record?.lockedByAdmin);
 
-              const statusText = record
-                ? record.status === 'present'
-                  ? 'Present'
-                  : 'Absent'
-                : isFuture
-                  ? 'Upcoming'
-                  : 'Not marked';
+              // Holidays are never markable by staff; future days depend on config.
+              const disabled = Boolean(holiday) || (isFuture && !allowFuture);
+
+              const tone = holiday
+                ? CELL.holiday
+                : record
+                  ? CELL[record.status]
+                  : isFuture
+                    ? CELL.future
+                    : CELL.unmarked;
+
+              const statusText = holiday
+                ? `Holiday: ${holiday.title}`
+                : record
+                  ? record.status === 'present'
+                    ? 'Present'
+                    : 'Absent'
+                  : isFuture
+                    ? 'Upcoming'
+                    : 'Not marked';
 
               return (
                 <button
@@ -118,17 +133,22 @@ export function AttendanceCalendar({
                   role="gridcell"
                   disabled={disabled}
                   onClick={() => onSelectDate(date)}
-                  aria-label={`${date}, ${statusText}${record?.remark ? `, remark: ${record.remark}` : ''}`}
+                  aria-label={`${bsDay} ${bsMonthLabel(yearMonth)}, ${statusText}${locked ? ', set by administrator' : ''}`}
                   aria-current={isToday ? 'date' : undefined}
-                  className={`relative flex aspect-square min-h-[46px] flex-col items-center justify-center rounded-lg border p-0.5 transition-colors disabled:cursor-not-allowed ${tone} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
+                  title={holiday ? holiday.title : undefined}
+                  className={`relative flex aspect-square min-h-[46px] flex-col items-center justify-center rounded-lg border p-0.5 transition-colors ${tone} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
                 >
-                  <span className="text-sm font-semibold tabular-nums sm:text-base">
-                    {parseDateStr(date).day}
-                  </span>
+                  <span className="text-sm font-semibold tabular-nums sm:text-base">{bsDay}</span>
 
-                  {/* Colour is never the only signal: every marked day also
-                      carries a glyph, and the full word on larger screens. */}
-                  {record ? (
+                  {/* Colour is never the only signal. */}
+                  {holiday ? (
+                    <span
+                      aria-hidden
+                      className="mt-0.5 w-full truncate px-0.5 text-[8px] font-bold uppercase leading-tight sm:text-[9px]"
+                    >
+                      Holiday
+                    </span>
+                  ) : record ? (
                     <>
                       <span aria-hidden className="text-[11px] font-bold leading-none sm:hidden">
                         {record.status === 'present' ? '✓' : '✕'}
@@ -142,10 +162,16 @@ export function AttendanceCalendar({
                     </>
                   ) : null}
 
+                  {locked ? (
+                    <Lock
+                      aria-hidden
+                      className="absolute left-1 top-1 h-2.5 w-2.5 opacity-70"
+                    />
+                  ) : null}
+
                   {record?.remark ? (
                     <span
                       aria-hidden
-                      title="Has a remark"
                       className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-current opacity-70"
                     />
                   ) : null}
@@ -164,14 +190,33 @@ export function AttendanceCalendar({
               Absent (✕)
             </li>
             <li className="flex items-center gap-1.5">
+              <span
+                className="h-3 w-3 rounded border border-dashed border-red-400 bg-absent-soft"
+                aria-hidden
+              />
+              Holiday
+            </li>
+            <li className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden />
               Not marked
             </li>
             <li className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-500" aria-hidden />
-              Has a remark
+              <Lock aria-hidden className="h-3 w-3" />
+              Set by administrator
             </li>
           </ul>
+
+          {/* The Gregorian range, so the Nepali month can be cross-checked. */}
+          <p className="mt-2 text-[11px] text-slate-400">
+            {label} covers{' '}
+            {(() => {
+              const real = cells.filter(Boolean) as { date: DateStr; bsDay: number }[];
+              const first = parseDateStr(real[0].date);
+              const last = parseDateStr(real[real.length - 1].date);
+              return `${first.year}-${String(first.month).padStart(2, '0')}-${String(first.day).padStart(2, '0')} to ${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}`;
+            })()}{' '}
+            in the English calendar.
+          </p>
         </>
       )}
     </section>

@@ -75,10 +75,12 @@ export async function POST(request: Request) {
           attendance_date: parsed.date,
           status: parsed.status,
           remark: parsed.status === 'absent' ? parsed.remark : null,
+          // Anything an administrator sets is locked against staff edits.
+          locked_by_admin: true,
         },
         { onConflict: 'employee_id,attendance_date' },
       )
-      .select('attendance_date, status, remark')
+      .select('attendance_date, status, remark, locked_by_admin')
       .single();
 
     if (error) throw new AppError(describeDbError(error), 500);

@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getEmployeeSession } from '@/lib/auth/employee-session';
 import { getEmployeeById, toPublicEmployee } from '@/lib/employees/queries';
-import { getMonthAttendance } from '@/lib/attendance/queries';
-import { currentYearMonth, todayInNepal } from '@/lib/date/nepal';
+import { getAttendanceRange } from '@/lib/attendance/queries';
+import { getHolidaysForDates } from '@/lib/holidays/queries';
+import { todayInNepal } from '@/lib/date/nepal';
+import { bsMonthDates, bsYearMonthOf } from '@/lib/date/bikram';
 import { getAppSettings } from '@/lib/config';
 import { EmployeeDashboard } from '@/components/EmployeeDashboard';
 
@@ -40,18 +42,25 @@ export default async function EmployeePage({ params }: PageProps) {
   const employee = await getEmployeeById(session.sub);
   if (!employee || !employee.is_active) redirect('/');
 
-  const yearMonth = currentYearMonth();
-  const [days, settings] = await Promise.all([
-    getMonthAttendance(employee.id, yearMonth),
-    Promise.resolve(getAppSettings()),
+  // The calendar is Bikram Sambat, so the month is worked out from today's
+  // Nepali date and expanded into the Gregorian dates it actually covers.
+  const today = todayInNepal();
+  const yearMonth = bsYearMonthOf(today);
+  const dates = bsMonthDates(yearMonth);
+
+  const [days, holidays] = await Promise.all([
+    getAttendanceRange(employee.id, dates[0], dates[dates.length - 1]),
+    getHolidaysForDates(dates),
   ]);
+  const settings = getAppSettings();
 
   return (
     <EmployeeDashboard
       employee={toPublicEmployee(employee)}
       initialMonth={yearMonth}
       initialDays={days}
-      today={todayInNepal()}
+      initialHolidays={[...holidays.values()]}
+      today={today}
       organisationName={settings.organisationName}
       settings={{
         attendanceEditEnabled: settings.attendanceEditEnabled,
