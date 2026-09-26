@@ -6,24 +6,18 @@ import type { EmployeePublic } from '@/types/employee';
 interface EmployeeProfileProps {
   employee: EmployeePublic;
   photoUrl: string | null;
-  onPhotoUploaded: (url: string) => void;
   actions?: React.ReactNode;
 }
 
-export function EmployeeProfile({
-  employee,
-  photoUrl,
-  onPhotoUploaded,
-  actions,
-}: EmployeeProfileProps) {
+/**
+ * Staff see their photo but cannot change it. Photographs are set by an
+ * administrator, from the admin dashboard.
+ */
+export function EmployeeProfile({ employee, photoUrl, actions }: EmployeeProfileProps) {
   return (
     <section className="card p-4 sm:p-6" aria-label="Employee profile">
       <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
-        <ProfilePhoto
-          photoUrl={photoUrl}
-          fullName={employee.full_name}
-          onUploaded={onPhotoUploaded}
-        />
+        <ProfilePhoto photoUrl={photoUrl} fullName={employee.full_name} editable={false} />
 
         <div className="min-w-0 flex-1">
           <h1 className="break-words text-xl font-bold text-navy-900 sm:text-2xl">

@@ -50,10 +50,10 @@ async function compressImage(file: File): Promise<File> {
 interface ProfilePhotoProps {
   photoUrl: string | null;
   fullName: string;
-  /** Employees post to their own endpoint; admins post on behalf of an employee. */
+  /** Uploads are admin-only, so this defaults to the admin-guarded route. */
   endpoint?: string;
   employeeId?: string;
-  onUploaded: (url: string) => void;
+  onUploaded?: (url: string) => void;
   size?: 'md' | 'lg';
   editable?: boolean;
 }
@@ -61,7 +61,7 @@ interface ProfilePhotoProps {
 export function ProfilePhoto({
   photoUrl,
   fullName,
-  endpoint = '/api/profile/photo',
+  endpoint = '/api/admin/employees/photo',
   employeeId,
   onUploaded,
   size = 'lg',
@@ -99,7 +99,7 @@ export function ProfilePhoto({
         return;
       }
 
-      onUploaded(payload.data.profilePhotoUrl);
+      onUploaded?.(payload.data.profilePhotoUrl);
       toast.success('Profile photo updated.');
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');

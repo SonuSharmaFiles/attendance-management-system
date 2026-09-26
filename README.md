@@ -77,14 +77,15 @@ app/
   api/
     session/route.ts                Code -> signed session cookie
     attendance/route.ts             Read a month / mark a day (session-scoped)
-    profile/photo/route.ts          Employee photo upload
     export/route.ts                 Employee's own xlsx / csv / pdf
     admin/
       employees/route.ts            List, create
       employees/[id]/route.ts       Edit, deactivate, delete
       employees/import/route.ts     Commit a previewed import
       employees/import/preview/     Parse + classify, writes nothing
-      employees/photo/route.ts      Admin sets any employee's photo
+      employees/photo/route.ts      Admin sets any employee's photo (the
+                                    only upload route; staff cannot change
+                                    their own picture)
       attendance/route.ts           Query / correct any employee's attendance
       export/route.ts               Multi-sheet workbook or CSV
       stats/route.ts                Dashboard counts

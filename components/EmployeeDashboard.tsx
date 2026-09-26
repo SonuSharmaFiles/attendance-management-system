@@ -34,7 +34,6 @@ export function EmployeeDashboard({
   settings,
 }: EmployeeDashboardProps) {
   const router = useRouter();
-  const [photoUrl, setPhotoUrl] = useState(employee.profile_photo_url);
   const [yearMonth, setYearMonth] = useState<YearMonth>(initialMonth);
   const [days, setDays] = useState<AttendanceDay[]>(initialDays);
   const [loadingMonth, setLoadingMonth] = useState(false);
@@ -154,8 +153,7 @@ export function EmployeeDashboard({
       <main id="main" className="mx-auto max-w-4xl space-y-5 px-3 py-5 sm:px-6 sm:py-8">
         <EmployeeProfile
           employee={employee}
-          photoUrl={photoUrl}
-          onPhotoUploaded={setPhotoUrl}
+          photoUrl={employee.profile_photo_url}
           actions={<DownloadAttendance computerCode={employee.computer_code} />}
         />
 
