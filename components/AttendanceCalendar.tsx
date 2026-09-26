@@ -150,11 +150,14 @@ export function AttendanceCalendar({
 
                   {/* Colour is never the only signal. */}
                   {holiday ? (
+                    // The administrator's own name for the day, not the generic
+                    // word. Cells are small, so it is truncated here and given
+                    // in full by the tooltip and the accessible label.
                     <span
                       aria-hidden
-                      className="w-full truncate px-0.5 text-[7px] font-bold uppercase leading-tight sm:text-[9px]"
+                      className="w-full truncate px-0.5 text-[7px] font-semibold leading-tight sm:text-[9px]"
                     >
-                      Holiday
+                      {holiday.title}
                     </span>
                   ) : record ? (
                     <>
@@ -202,7 +205,7 @@ export function AttendanceCalendar({
                 className="h-3 w-3 rounded border border-dashed border-red-400 bg-absent-soft"
                 aria-hidden
               />
-              Holiday
+              Holiday (the name is shown in the box)
             </li>
             <li className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden />

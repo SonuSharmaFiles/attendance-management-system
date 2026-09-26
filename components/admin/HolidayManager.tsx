@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarOff, Plus, Trash2 } from 'lucide-react';
+import { CalendarOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TableSkeleton } from '@/components/LoadingState';
 import { describeRule, type HolidayRule } from '@/lib/holidays/rules';
-import { BS_WEEKDAYS, BS_WEEKDAYS_NEPALI, bsLongLabelNepali, toBs } from '@/lib/date/bikram';
+import { BS_WEEKDAYS_NEPALI, bsLongLabelNepali, toBs } from '@/lib/date/bikram';
 import { todayInNepal } from '@/lib/date/nepal';
 
 type Recurrence = 'once' | 'weekly' | 'monthly';
@@ -21,6 +21,19 @@ interface FormState {
   bsDay: string;
   startDate: string;
   endDate: string;
+}
+
+/** Turns a saved rule back into form values, so it can be edited. */
+function formFromRule(rule: HolidayRule): FormState {
+  return {
+    title: rule.title,
+    note: rule.note ?? '',
+    recurrence: rule.recurrence,
+    weekday: String(rule.weekday ?? 0),
+    bsDay: String(rule.bs_day ?? 1),
+    startDate: rule.start_date,
+    endDate: rule.end_date ?? '',
+  };
 }
 
 function emptyForm(): FormState {
@@ -39,6 +52,7 @@ export function HolidayManager() {
   const [holidays, setHolidays] = useState<HolidayRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<HolidayRule | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -81,8 +95,10 @@ export function HolidayManager() {
 
     setSaving(true);
     try {
-      const response = await fetch('/api/admin/holidays', {
-        method: 'POST',
+      const response = await fetch(
+        editing ? `/api/admin/holidays/${editing.id}` : '/api/admin/holidays',
+        {
+        method: editing ? 'PATCH' : 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           title: form.title.trim(),
@@ -92,9 +108,10 @@ export function HolidayManager() {
           bsDay: form.recurrence === 'monthly' ? Number(form.bsDay) : null,
           startDate: form.startDate,
           endDate: form.endDate || null,
-          isActive: true,
+          isActive: editing ? editing.is_active : true,
         }),
-      });
+      },
+      );
       const payload = (await response.json().catch(() => null)) as
         | { ok: true }
         | { ok: false; error: string }
@@ -107,8 +124,11 @@ export function HolidayManager() {
         return;
       }
 
-      toast.success('Holiday added. It applies to every employee.');
+      toast.success(
+        editing ? 'Holiday updated for every employee.' : 'Holiday added. It applies to every employee.',
+      );
       setForm(emptyForm());
+      setEditing(null);
       setOpen(false);
       await load();
     } catch {
@@ -176,7 +196,14 @@ export function HolidayManager() {
           Holidays apply to <span className="font-semibold">every employee</span>. Staff cannot mark
           attendance on a holiday.
         </p>
-        <Button onClick={() => { setForm(emptyForm()); setError(null); setOpen(true); }}>
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setForm(emptyForm());
+            setError(null);
+            setOpen(true);
+          }}
+        >
           <Plus aria-hidden className="h-4 w-4" />
           Add Holiday
         </Button>
@@ -211,6 +238,19 @@ export function HolidayManager() {
                   <Button
                     size="sm"
                     variant="secondary"
+                    onClick={() => {
+                      setEditing(rule);
+                      setForm(formFromRule(rule));
+                      setError(null);
+                      setOpen(true);
+                    }}
+                  >
+                    <Pencil aria-hidden className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
                     loading={pendingId === rule.id}
                     onClick={() => toggle(rule)}
                   >
@@ -234,10 +274,17 @@ export function HolidayManager() {
 
       <Modal
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
         busy={saving}
-        title="Add a Holiday"
-        description="This applies to every employee straight away."
+        title={editing ? 'Edit Holiday' : 'Add a Holiday'}
+        description={
+          editing
+            ? 'Changes apply to every employee straight away.'
+            : 'This applies to every employee straight away.'
+        }
       >
         <form onSubmit={save} className="space-y-4" noValidate>
           <Input label="Name" placeholder="For example: Dashain" maxLength={80} required {...field('title')} />
@@ -256,7 +303,7 @@ export function HolidayManager() {
             <Select label="Which day of the week?" {...field('weekday')}>
               {BS_WEEKDAYS_NEPALI.map((nepali, index) => (
                 <option key={nepali} value={index}>
-                  {nepali} — {BS_WEEKDAYS[index]}
+                  {nepali}
                 </option>
               ))}
             </Select>
@@ -308,9 +355,18 @@ export function HolidayManager() {
 
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <Button type="submit" fullWidth loading={saving}>
-              Add Holiday
+              {editing ? 'Save Changes' : 'Add Holiday'}
             </Button>
-            <Button type="button" variant="secondary" fullWidth onClick={() => setOpen(false)} disabled={saving}>
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setOpen(false);
+                setEditing(null);
+              }}
+              disabled={saving}
+            >
               Cancel
             </Button>
           </div>

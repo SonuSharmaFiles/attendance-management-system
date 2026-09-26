@@ -85,15 +85,7 @@ export function expandHolidays(rules: HolidayRule[], dates: DateStr[]): Map<Date
 
 /** Plain-language description of a rule, for the admin list. */
 export function describeRule(rule: HolidayRule): string {
-  const WEEKDAYS = [
-    'आइतबार (Aaitabaar)',
-    'सोमबार (Sombaar)',
-    'मंगलबार (Mangalbaar)',
-    'बुधबार (Budhabaar)',
-    'बिहिबार (Bihibaar)',
-    'शुक्रबार (Shukrabaar)',
-    'शनिबार (Shanibaar)',
-  ];
+  const WEEKDAYS = ['आइतबार', 'सोमबार', 'मंगलबार', 'बुधबार', 'बिहिबार', 'शुक्रबार', 'शनिबार'];
 
   const until = rule.end_date ? ` until ${rule.end_date}` : ' — ongoing';
 
