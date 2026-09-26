@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CalendarDays, Pencil, Plus, RotateCcw, Search, UserX } from 'lucide-react';
 import Link from 'next/link';
+import { StaffDownloadButton } from '@/components/admin/StaffDownloadButton';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { TableSkeleton } from '@/components/LoadingState';
@@ -164,7 +165,11 @@ export function EmployeeManager() {
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <StaffDownloadButton
+                    employeeId={employee.id}
+                    employeeName={employee.full_name}
+                  />
                   <Link
                     href={`/admin/employees/${employee.id}/attendance`}
                     className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-navy-800 hover:bg-slate-50"
@@ -231,6 +236,10 @@ export function EmployeeManager() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
+                        <StaffDownloadButton
+                          employeeId={employee.id}
+                          employeeName={employee.full_name}
+                        />
                         <Link
                           href={`/admin/employees/${employee.id}/attendance`}
                           aria-label={`See attendance for ${employee.full_name}`}

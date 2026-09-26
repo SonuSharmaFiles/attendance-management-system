@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, Lock, Trash2, X } from 'lucide-react';
+import { StaffDownloadButton } from '@/components/admin/StaffDownloadButton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -132,22 +133,21 @@ export function StaffAttendanceEditor({ employee, today }: StaffAttendanceEditor
 
   return (
     <div className="space-y-5">
-      <Link
-        href="/admin/employees"
-        className="inline-flex min-h-[38px] items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-navy-900"
-      >
-        <ArrowLeft aria-hidden className="h-4 w-4" />
-        Back to staff list
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/admin/employees"
+          className="inline-flex min-h-[38px] items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-navy-900"
+        >
+          <ArrowLeft aria-hidden className="h-4 w-4" />
+          Back to staff list
+        </Link>
 
-      <p className="flex items-start gap-2 rounded-xl border border-navy-200 bg-navy-50 p-3 text-sm text-navy-900">
-        <Lock aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          You can set <span className="font-semibold">any</span> day here, including holidays and
-          days still to come. Whatever you set is locked — {employee.full_name} will see
-          &quot;Updated by administrator&quot; and cannot change it.
-        </span>
-      </p>
+        <StaffDownloadButton
+          employeeId={employee.id}
+          employeeName={employee.full_name}
+          variant="button"
+        />
+      </div>
 
       <MonthlySummary summary={summary} monthLabel={bsMonthLabelNepali(yearMonth)} />
 

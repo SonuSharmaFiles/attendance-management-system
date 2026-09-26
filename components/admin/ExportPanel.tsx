@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Download, Grid3x3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
-import { downloadResponse } from '@/components/DownloadAttendance';
+import { downloadResponse } from '@/lib/download';
 import { currentYearMonth, todayInNepal, yearMonthToInput } from '@/lib/date/nepal';
 import { bsLongLabelNepali, bsYearMonthOf, toBs, toNepaliNumber } from '@/lib/date/bikram';
 import { STAFF_TYPE_LABEL } from '@/lib/config';

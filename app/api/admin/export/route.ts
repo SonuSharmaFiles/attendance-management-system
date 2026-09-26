@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/admin';
 import { buildFullExportWorkbook, rowsToCsv, type FullExportEmployee } from '@/lib/excel/export';
-import { CONTENT_TYPES, fullExportFilename, periodLabel } from '@/lib/excel/filenames';
+import {
+  attendanceFilename,
+  CONTENT_TYPES,
+  fullExportFilename,
+  periodLabel,
+} from '@/lib/excel/filenames';
+import { buildAttendancePdf } from '@/lib/pdf/report';
+import { getAppSettings } from '@/lib/config';
 import { AppError, describeDbError, handleRouteError, readJson } from '@/lib/http';
 import { MAX_EXPORT_MONTHS } from '@/lib/config';
 import {
@@ -21,7 +28,7 @@ export const maxDuration = 60;
 const requestSchema = z.object({
   fromMonth: z.string().regex(/^\d{4}-\d{2}$/),
   toMonth: z.string().regex(/^\d{4}-\d{2}$/),
-  format: z.enum(['xlsx', 'csv']),
+  format: z.enum(['xlsx', 'csv', 'pdf']),
   /** Restrict to one employee, one department, or leave both out for everyone. */
   employeeId: z.string().uuid().optional(),
   employeeIds: z.array(z.string().uuid()).max(500).optional(),
@@ -120,7 +127,33 @@ export async function POST(request: Request) {
       }
     }
 
-    const filename = fullExportFilename(from, to, input.format);
+    if (input.format === 'pdf' && employees.length !== 1) {
+      throw new AppError('A PDF report covers one staff member at a time.', 422);
+    }
+
+    if (input.format === 'pdf') {
+      const person = employees[0];
+      const pdf = buildAttendancePdf(rows, {
+        organisationName: getAppSettings().organisationName,
+        employeeName: person.full_name as string,
+        computerCode: person.computer_code as string,
+        rank: (person.rank as string | null) ?? null,
+        department: (person.department as string | null) ?? null,
+        periodLabel: periodLabel(from, to),
+      });
+
+      return new Response(pdf as BodyInit, {
+        headers: {
+          'Content-Type': CONTENT_TYPES.pdf,
+          'Content-Disposition': `attachment; filename="${attendanceFilename(person.computer_code as string, from, to, 'pdf')}"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    const filename = input.employeeId && employees.length === 1
+      ? attendanceFilename(employees[0].computer_code as string, from, to, input.format)
+      : fullExportFilename(from, to, input.format);
 
     if (input.format === 'csv') {
       return new Response(rowsToCsv(rows), {

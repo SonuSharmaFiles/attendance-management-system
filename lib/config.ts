@@ -70,3 +70,13 @@ export const STAFF_TYPE_LABEL = 'Type of staff';
 
 /** Label used wherever the `office` field is shown. */
 export const DARBANDI_LABEL = 'दरबन्दी';
+
+/**
+ * Admin panel heading. Kept in config rather than hard-coded in the component
+ * so it can be changed from the environment without touching the code.
+ */
+export const ADMIN_TITLE =
+  process.env.NEXT_PUBLIC_ADMIN_TITLE?.trim() || 'मधेश प्रदेश प्रहरी तालिम केन्द्र, जनकपुर';
+
+export const ADMIN_SUBTITLE =
+  process.env.NEXT_PUBLIC_ADMIN_SUBTITLE?.trim() || 'सम्पर्क कार्यालय - सप्तरी';

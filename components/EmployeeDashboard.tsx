@@ -9,7 +9,6 @@ import { EmployeeProfile } from '@/components/EmployeeProfile';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { AttendanceModal } from '@/components/AttendanceModal';
 import { MonthlySummary } from '@/components/MonthlySummary';
-import { DownloadAttendance } from '@/components/DownloadAttendance';
 import { LoadingRegion } from '@/components/LoadingState';
 import { summariseDates } from '@/lib/attendance/summary';
 import type { DateStr } from '@/lib/date/nepal';
@@ -177,11 +176,7 @@ export function EmployeeDashboard({
       />
 
       <main id="main" className="mx-auto max-w-4xl space-y-5 px-3 py-5 sm:px-6 sm:py-8">
-        <EmployeeProfile
-          employee={employee}
-          photoUrl={employee.profile_photo_url}
-          actions={<DownloadAttendance computerCode={employee.computer_code} />}
-        />
+        <EmployeeProfile employee={employee} photoUrl={employee.profile_photo_url} />
 
         <MonthlySummary summary={summary} monthLabel={label} />
 
@@ -200,10 +195,6 @@ export function EmployeeDashboard({
         />
 
         {loadingMonth ? <LoadingRegion label={`Loading attendance for ${label}`} /> : null}
-
-        <div className="flex justify-center pb-4 sm:hidden">
-          <DownloadAttendance computerCode={employee.computer_code} />
-        </div>
       </main>
 
       <AttendanceModal

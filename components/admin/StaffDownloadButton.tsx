@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { downloadResponse } from '@/lib/download';
 import { currentYearMonth, yearMonthToInput } from '@/lib/date/nepal';
 
 type Format = 'xlsx' | 'csv' | 'pdf';
@@ -16,25 +17,22 @@ const FORMATS: { value: Format; label: string; hint: string }[] = [
   { value: 'pdf', label: 'PDF', hint: 'Formatted report for sharing' },
 ];
 
-/** Triggers a browser download from a fetched Blob. */
-async function downloadResponse(response: Response, fallbackName: string) {
-  const disposition = response.headers.get('Content-Disposition') ?? '';
-  const match = /filename="([^"]+)"/.exec(disposition);
-  const filename = match?.[1] ?? fallbackName;
-
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  return filename;
+interface StaffDownloadButtonProps {
+  employeeId: string;
+  employeeName: string;
+  /** 'icon' for the staff table, 'button' for the calendar page. */
+  variant?: 'icon' | 'button';
 }
 
-export function DownloadAttendance({ computerCode }: { computerCode: string }) {
+/**
+ * Downloads ONE staff member's attendance. Only administrators can do this —
+ * staff no longer download their own record.
+ */
+export function StaffDownloadButton({
+  employeeId,
+  employeeName,
+  variant = 'icon',
+}: StaffDownloadButtonProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const thisMonth = yearMonthToInput(currentYearMonth());
@@ -51,23 +49,29 @@ export function DownloadAttendance({ computerCode }: { computerCode: string }) {
 
     setBusy(true);
     try {
-      const response = await fetch('/api/export', {
+      const response = await fetch('/api/admin/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromMonth, toMonth, format }),
+        body: JSON.stringify({
+          fromMonth,
+          toMonth,
+          format,
+          employeeId,
+          includeUnmarked: true,
+        }),
       });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        toast.error(payload?.error ?? 'The report could not be generated. Please try again.');
+        toast.error(payload?.error ?? 'The report could not be generated.');
         return;
       }
 
-      await downloadResponse(response, `attendance-${computerCode}.${format}`);
-      toast.success('Attendance report downloaded.');
+      await downloadResponse(response, `attendance.${format}`);
+      toast.success(`${employeeName}'s attendance downloaded.`);
       setOpen(false);
     } catch {
-      toast.error('Unable to reach the server. Please check your connection.');
+      toast.error('Unable to reach the server.');
     } finally {
       setBusy(false);
     }
@@ -75,17 +79,28 @@ export function DownloadAttendance({ computerCode }: { computerCode: string }) {
 
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        <Download aria-hidden className="h-4 w-4" />
-        Download Attendance
-      </Button>
+      {variant === 'icon' ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`Download attendance for ${employeeName}`}
+          className="inline-flex min-h-[38px] items-center justify-center rounded-xl px-3 text-slate-600 transition-colors hover:bg-slate-100 hover:text-navy-800"
+        >
+          <Download aria-hidden className="h-4 w-4" />
+        </button>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          <Download aria-hidden className="h-4 w-4" />
+          Download Attendance
+        </Button>
+      )}
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
         busy={busy}
         title="Download Attendance"
-        description="Choose a period and a file format."
+        description={`${employeeName} — choose a period and a file format.`}
       >
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -121,7 +136,7 @@ export function DownloadAttendance({ computerCode }: { computerCode: string }) {
                 >
                   <input
                     type="radio"
-                    name="export-format"
+                    name={`format-${employeeId}`}
                     value={option.value}
                     checked={format === option.value}
                     onChange={() => setFormat(option.value)}
@@ -150,5 +165,3 @@ export function DownloadAttendance({ computerCode }: { computerCode: string }) {
     </>
   );
 }
-
-export { downloadResponse };

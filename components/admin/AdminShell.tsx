@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Archive, CalendarCheck, CalendarOff, LayoutDashboard, LogOut, UserCog, Upload, Users } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { ADMIN_SUBTITLE, ADMIN_TITLE } from '@/lib/config';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
@@ -37,13 +38,13 @@ export function AdminShell({
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-navy-900/20 bg-navy-800 text-white">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-          <Link href="/admin" className="flex items-center gap-3">
-            <Logo size={32} className="h-8 w-auto" />
-            <span>
-              <span className="block text-sm font-bold leading-tight sm:text-base">
-                Admin Dashboard
+          <Link href="/admin" className="flex min-w-0 items-center gap-3">
+            <Logo size={32} className="h-8 w-auto shrink-0" />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold leading-tight sm:text-base">
+                {ADMIN_TITLE}
               </span>
-              <span className="block text-xs text-navy-200">Attendance Management System</span>
+              <span className="block truncate text-xs text-navy-200">{ADMIN_SUBTITLE}</span>
             </span>
           </Link>
 
