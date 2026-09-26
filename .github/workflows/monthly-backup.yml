@@ -1,0 +1,58 @@
+# Monthly Excel backup of all attendance.
+#
+# This runs EVERY DAY, but the application decides whether to act: the day of
+# the Nepali month is stored in the database and set from the Backups page, so
+# changing it never means editing this file.
+#
+# Setup (once): Settings → Secrets and variables → Actions, add
+#   SITE_URL             https://attendance-management-system-monusharma.vercel.app
+#   BACKUP_CRON_SECRET   the same long random value set in Vercel
+
+name: Monthly attendance backup
+
+on:
+  schedule:
+    # 18:30 UTC = 00:15 Nepal time, so it lands early on the chosen day.
+    - cron: '30 18 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: attendance-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ask the site to run a backup
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          BACKUP_CRON_SECRET: ${{ secrets.BACKUP_CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$BACKUP_CRON_SECRET" ]; then
+            echo "SITE_URL and BACKUP_CRON_SECRET must both be set as repository secrets."
+            exit 1
+          fi
+
+          # -sS keeps curl quiet but still prints errors; the body is captured
+          # separately from the status so a failure can be reported properly.
+          BODY=$(mktemp)
+          CODE=$(curl -sS -o "$BODY" -w '%{http_code}' \
+            --max-time 120 \
+            -X POST "$SITE_URL/api/cron/backup" \
+            -H "x-backup-secret: $BACKUP_CRON_SECRET" \
+            -H 'content-type: application/json')
+
+          echo "HTTP $CODE"
+          cat "$BODY"
+          echo
+
+          if [ "$CODE" != "200" ]; then
+            echo "Backup request failed."
+            exit 1
+          fi
