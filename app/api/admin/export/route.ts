@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateStrSchema } from '@/lib/validation/schemas';
 import { requireAdmin } from '@/lib/auth/admin';
 import { buildFullExportWorkbook, rowsToCsv, type FullExportEmployee } from '@/lib/excel/export';
 import {
@@ -28,6 +29,11 @@ export const maxDuration = 60;
 const requestSchema = z.object({
   fromMonth: z.string().regex(/^\d{4}-\d{2}$/),
   toMonth: z.string().regex(/^\d{4}-\d{2}$/),
+  // Exact days, used when the range was chosen in Bikram Sambat. A BS month
+  // straddles two Gregorian ones, so whole-Gregorian-month bounds would pull
+  // in days from the neighbouring Nepali months.
+  fromDate: z.union([dateStrSchema, z.literal('')]).optional().transform((v) => v || undefined),
+  toDate: z.union([dateStrSchema, z.literal('')]).optional().transform((v) => v || undefined),
   format: z.enum(['xlsx', 'csv', 'pdf']),
   /** Restrict to one employee, one department, or leave both out for everyone. */
   employeeId: z.string().uuid().optional(),
@@ -69,8 +75,9 @@ export async function POST(request: Request) {
     }
 
     // --- Attendance in scope ----------------------------------------------
-    const start = monthBounds(from).start;
-    const end = monthBounds(to).end;
+    const start = input.fromDate ?? monthBounds(from).start;
+    const end = input.toDate ?? monthBounds(to).end;
+    if (start > end) throw new AppError('The start date must not be after the end date.', 422);
     const employeeIds = employees.map((employee) => employee.id as string);
 
     const { data: attendance, error: attendanceError } = await supabase
@@ -84,7 +91,9 @@ export async function POST(request: Request) {
     if (attendanceError) throw new AppError(describeDbError(attendanceError), 500);
 
     const today = todayInNepal();
-    const allDates = datesBetweenMonths(from, to).filter((date) => date <= today);
+    const allDates = datesBetweenMonths(from, to).filter(
+      (date) => date >= start && date <= end && date <= today,
+    );
 
     const byEmployeeDate = new Map<string, { status: string; remark: string | null }>();
     for (const record of attendance ?? []) {

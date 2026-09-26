@@ -4,10 +4,18 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { BsMonthPicker } from '@/components/ui/BsDatePicker';
 import { Modal } from '@/components/ui/Modal';
 import { downloadResponse } from '@/lib/download';
-import { currentYearMonth, yearMonthToInput } from '@/lib/date/nepal';
+import { todayInNepal } from '@/lib/date/nepal';
+import {
+  bsDaysInMonth,
+  bsMonthLabelNepali,
+  bsYearMonthFromInput,
+  bsYearMonthOf,
+  bsYearMonthToInput,
+  fromBs,
+} from '@/lib/date/bikram';
 
 type Format = 'xlsx' | 'csv' | 'pdf';
 
@@ -35,17 +43,26 @@ export function StaffDownloadButton({
 }: StaffDownloadButtonProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const thisMonth = yearMonthToInput(currentYearMonth());
-  const [fromMonth, setFromMonth] = useState(thisMonth);
-  const [toMonth, setToMonth] = useState(thisMonth);
+  const today = todayInNepal();
+  const thisBsMonth = bsYearMonthToInput(bsYearMonthOf(today));
+  const [fromMonth, setFromMonth] = useState(thisBsMonth);
+  const [toMonth, setToMonth] = useState(thisBsMonth);
   const [format, setFormat] = useState<Format>('xlsx');
 
   async function handleDownload() {
     if (busy) return;
-    if (fromMonth > toMonth) {
-      toast.error('The start month must not be after the end month.');
+    // Turn the Bikram Sambat months into the exact Gregorian days they cover.
+    // A BS month starts mid-month in the English calendar, so sending whole
+    // English months would pull in days from the neighbouring Nepali months.
+    const fromBsMonth = bsYearMonthFromInput(fromMonth);
+    const toBsMonth = bsYearMonthFromInput(toMonth);
+    if (!fromBsMonth || !toBsMonth) {
+      toast.error('Please choose a valid month range.');
       return;
     }
+
+    const fromDate = fromBs({ ...fromBsMonth, day: 1 });
+    const toDate = fromBs({ ...toBsMonth, day: bsDaysInMonth(toBsMonth) });
 
     setBusy(true);
     try {
@@ -53,8 +70,11 @@ export function StaffDownloadButton({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromMonth,
-          toMonth,
+          // The months still bound the search; the dates trim it exactly.
+          fromMonth: fromDate.slice(0, 7),
+          toMonth: toDate.slice(0, 7),
+          fromDate,
+          toDate,
           format,
           employeeId,
           includeUnmarked: true,
@@ -103,22 +123,34 @@ export function StaffDownloadButton({
         description={`${employeeName} — choose a period and a file format.`}
       >
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="From Month"
-              type="month"
+          <div className="space-y-4">
+            <BsMonthPicker
+              label="From month (देखि)"
               value={fromMonth}
-              max={toMonth}
-              onChange={(event) => setFromMonth(event.target.value)}
+              today={today}
               disabled={busy}
+              onChange={(value) => {
+                setFromMonth(value);
+                if (value > toMonth) setToMonth(value);
+              }}
+              hint={(() => {
+                const m = bsYearMonthFromInput(fromMonth);
+                return m ? bsMonthLabelNepali(m) : '';
+              })()}
             />
-            <Input
-              label="To Month"
-              type="month"
+            <BsMonthPicker
+              label="To month (सम्म)"
               value={toMonth}
-              min={fromMonth}
-              onChange={(event) => setToMonth(event.target.value)}
+              today={today}
               disabled={busy}
+              onChange={(value) => {
+                setToMonth(value);
+                if (value < fromMonth) setFromMonth(value);
+              }}
+              hint={(() => {
+                const m = bsYearMonthFromInput(toMonth);
+                return m ? bsMonthLabelNepali(m) : '';
+              })()}
             />
           </div>
 

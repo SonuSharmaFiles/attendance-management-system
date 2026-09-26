@@ -4,26 +4,17 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plane } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input, Textarea } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Input';
+import { BsDatePicker } from '@/components/ui/BsDatePicker';
 import { Modal } from '@/components/ui/Modal';
 import { MAX_REMARK_LENGTH } from '@/lib/config';
 import { todayInNepal } from '@/lib/date/nepal';
-import { bsLongLabelNepali, toBs } from '@/lib/date/bikram';
 
 interface AssignLeaveButtonProps {
   employeeId: string;
   employeeName: string;
   /** Called after a successful change, so the calendar can reload. */
   onAssigned: () => void;
-}
-
-/** Nepali date under each box, so the range is never ambiguous. */
-function nepaliHint(value: string): string {
-  try {
-    return bsLongLabelNepali(toBs(value));
-  } catch {
-    return '';
-  }
 }
 
 export function AssignLeaveButton({
@@ -106,24 +97,27 @@ export function AssignLeaveButton({
         description={`${employeeName} — choose the first and last day of the leave.`}
       >
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="First day"
-              type="date"
+          <div className="space-y-4">
+            <BsDatePicker
+              label="First day (पहिलो दिन)"
               value={fromDate}
-              max={toDate}
-              onChange={(event) => setFromDate(event.target.value)}
+              today={today}
               disabled={busy}
-              hint={nepaliHint(fromDate)}
+              onChange={(value) => {
+                setFromDate(value);
+                // Keep the range valid rather than rejecting it later.
+                if (value > toDate) setToDate(value);
+              }}
             />
-            <Input
-              label="Last day"
-              type="date"
+            <BsDatePicker
+              label="Last day (अन्तिम दिन)"
               value={toDate}
-              min={fromDate}
-              onChange={(event) => setToDate(event.target.value)}
+              today={today}
               disabled={busy}
-              hint={nepaliHint(toDate)}
+              onChange={(value) => {
+                setToDate(value);
+                if (value < fromDate) setFromDate(value);
+              }}
             />
           </div>
 

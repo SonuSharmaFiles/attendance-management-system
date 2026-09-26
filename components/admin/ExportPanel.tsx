@@ -4,17 +4,25 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download, Grid3x3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Input';
+import { BsDatePicker, BsMonthPicker } from '@/components/ui/BsDatePicker';
 import { downloadResponse } from '@/lib/download';
-import { currentYearMonth, todayInNepal, yearMonthToInput } from '@/lib/date/nepal';
-import { bsLongLabelNepali, bsYearMonthOf, toBs, toNepaliNumber } from '@/lib/date/bikram';
+import { todayInNepal } from '@/lib/date/nepal';
+import {
+  bsDaysInMonth,
+  bsYearMonthFromInput,
+  bsYearMonthOf,
+  bsYearMonthToInput,
+  fromBs,
+  toNepaliNumber,
+} from '@/lib/date/bikram';
 import { STAFF_TYPE_LABEL } from '@/lib/config';
 
 /** Admin-side export: whole organisation, one department, or one employee. */
 export function ExportPanel({ departments }: { departments: string[] }) {
-  const thisMonth = yearMonthToInput(currentYearMonth());
-  const [fromMonth, setFromMonth] = useState(thisMonth);
-  const [toMonth, setToMonth] = useState(thisMonth);
+  const thisBsMonth = bsYearMonthToInput(bsYearMonthOf(todayInNepal()));
+  const [fromMonth, setFromMonth] = useState(thisBsMonth);
+  const [toMonth, setToMonth] = useState(thisBsMonth);
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [department, setDepartment] = useState('');
   const [includeUnmarked, setIncludeUnmarked] = useState(false);
@@ -23,22 +31,31 @@ export function ExportPanel({ departments }: { departments: string[] }) {
   const [bsYear, setBsYear] = useState(() => bsYearMonthOf(todayInNepal()).year);
   const [gridFrom, setGridFrom] = useState('');
   const [gridTo, setGridTo] = useState('');
+  const [useRange, setUseRange] = useState(false);
 
   async function handleExport() {
     if (busy) return;
-    if (fromMonth > toMonth) {
-      toast.error('The start month must not be after the end month.');
-      return;
-    }
-
     setBusy(true);
     try {
+      const fromBsMonth = bsYearMonthFromInput(fromMonth);
+      const toBsMonth = bsYearMonthFromInput(toMonth);
+      if (!fromBsMonth || !toBsMonth) {
+        toast.error('Please choose a valid month range.');
+        return;
+      }
+      // A Bikram Sambat month begins mid-month in the English calendar, so the
+      // exact days are sent rather than whole English months.
+      const fromDate = fromBs({ ...fromBsMonth, day: 1 });
+      const toDate = fromBs({ ...toBsMonth, day: bsDaysInMonth(toBsMonth) });
+
       const response = await fetch('/api/admin/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromMonth,
-          toMonth,
+          fromMonth: fromDate.slice(0, 7),
+          toMonth: toDate.slice(0, 7),
+          fromDate,
+          toDate,
           format,
           department: department || undefined,
           includeUnmarked,
@@ -92,15 +109,6 @@ export function ExportPanel({ departments }: { departments: string[] }) {
 
   const thisBsYear = bsYearMonthOf(todayInNepal()).year;
 
-  /** Shows the Nepali equivalent under a date box, so the range is unambiguous. */
-  function nepaliHint(value: string) {
-    try {
-      return bsLongLabelNepali(toBs(value));
-    } catch {
-      return '';
-    }
-  }
-
   return (
     <>
     <section className="card space-y-4 p-4 sm:p-5">
@@ -112,21 +120,25 @@ export function ExportPanel({ departments }: { departments: string[] }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Input
-          label="From Month"
-          type="month"
+        <BsMonthPicker
+          label="From month (देखि)"
           value={fromMonth}
-          max={toMonth}
-          onChange={(event) => setFromMonth(event.target.value)}
+          today={todayInNepal()}
           disabled={busy}
+          onChange={(value) => {
+            setFromMonth(value);
+            if (value > toMonth) setToMonth(value);
+          }}
         />
-        <Input
-          label="To Month"
-          type="month"
+        <BsMonthPicker
+          label="To month (सम्म)"
           value={toMonth}
-          min={fromMonth}
-          onChange={(event) => setToMonth(event.target.value)}
+          today={todayInNepal()}
           disabled={busy}
+          onChange={(value) => {
+            setToMonth(value);
+            if (value < fromMonth) setFromMonth(value);
+          }}
         />
         <Select
           label={STAFF_TYPE_LABEL}
@@ -179,26 +191,51 @@ export function ExportPanel({ departments }: { departments: string[] }) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input
-          label="From date (optional)"
-          type="date"
-          value={gridFrom}
-          max={gridTo || undefined}
-          onChange={(event) => setGridFrom(event.target.value)}
+      <label className="flex items-center gap-2.5 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={useRange}
+          onChange={(event) => {
+            setUseRange(event.target.checked);
+            if (!event.target.checked) {
+              setGridFrom('');
+              setGridTo('');
+            } else {
+              const first = fromBs({ year: bsYear, month: 1, day: 1 });
+              setGridFrom(first);
+              setGridTo(todayInNepal());
+            }
+          }}
           disabled={gridBusy}
-          hint={gridFrom ? nepaliHint(gridFrom) : 'Leave blank to start from the first day.'}
+          className="h-4 w-4 accent-navy-800"
         />
-        <Input
-          label="To date (optional)"
-          type="date"
-          value={gridTo}
-          min={gridFrom || undefined}
-          onChange={(event) => setGridTo(event.target.value)}
-          disabled={gridBusy}
-          hint={gridTo ? nepaliHint(gridTo) : 'Leave blank to run to the last day.'}
-        />
-      </div>
+        Only part of the year
+      </label>
+
+      {useRange ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <BsDatePicker
+            label="From (देखि)"
+            value={gridFrom || todayInNepal()}
+            today={todayInNepal()}
+            disabled={gridBusy}
+            onChange={(value) => {
+              setGridFrom(value);
+              if (gridTo && value > gridTo) setGridTo(value);
+            }}
+          />
+          <BsDatePicker
+            label="To (सम्म)"
+            value={gridTo || todayInNepal()}
+            today={todayInNepal()}
+            disabled={gridBusy}
+            onChange={(value) => {
+              setGridTo(value);
+              if (gridFrom && value < gridFrom) setGridFrom(value);
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Select
