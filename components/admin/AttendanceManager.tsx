@@ -11,6 +11,7 @@ import { TableSkeleton } from '@/components/LoadingState';
 import { currentYearMonth, dayName, monthBounds, todayInNepal, type DateStr } from '@/lib/date/nepal';
 import { MAX_REMARK_LENGTH } from '@/lib/config';
 import type { Employee } from '@/types/employee';
+import { STAFF_TYPE_LABEL } from '@/lib/config';
 
 interface AttendanceRow {
   id: string;
@@ -167,12 +168,12 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
             <option value="absent">Absent only</option>
           </Select>
           <Select
-            label="Department"
+            label={STAFF_TYPE_LABEL}
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
             disabled={Boolean(selectedEmployee)}
           >
-            <option value="">All departments</option>
+            <option value="">All types</option>
             {departments.map((name) => (
               <option key={name} value={name}>
                 {name}

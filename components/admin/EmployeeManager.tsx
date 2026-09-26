@@ -196,7 +196,7 @@ export function EmployeeManager() {
                   <th scope="col" className="px-4 py-3">Code</th>
                   <th scope="col" className="px-4 py-3">Name</th>
                   <th scope="col" className="px-4 py-3">Rank</th>
-                  <th scope="col" className="px-4 py-3">Department</th>
+                  <th scope="col" className="px-4 py-3">Type of staff</th>
                   <th scope="col" className="px-4 py-3">Status</th>
                   <th scope="col" className="px-4 py-3 text-right">Actions</th>
                 </tr>

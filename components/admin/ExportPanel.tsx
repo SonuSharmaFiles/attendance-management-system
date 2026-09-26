@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { downloadResponse } from '@/components/DownloadAttendance';
 import { currentYearMonth, yearMonthToInput } from '@/lib/date/nepal';
+import { STAFF_TYPE_LABEL } from '@/lib/config';
 
 /** Admin-side export: whole organisation, one department, or one employee. */
 export function ExportPanel({ departments }: { departments: string[] }) {
@@ -81,12 +82,12 @@ export function ExportPanel({ departments }: { departments: string[] }) {
           disabled={busy}
         />
         <Select
-          label="Department"
+          label={STAFF_TYPE_LABEL}
           value={department}
           onChange={(event) => setDepartment(event.target.value)}
           disabled={busy}
         >
-          <option value="">All departments</option>
+          <option value="">All types</option>
           {departments.map((name) => (
             <option key={name} value={name}>
               {name}

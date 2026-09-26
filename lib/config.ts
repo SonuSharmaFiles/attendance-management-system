@@ -50,3 +50,23 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const MAX_REMARK_LENGTH = 300;
 export const MAX_EXPORT_MONTHS = 24;
+
+/**
+ * "Type of staff" — stored in the `department` column.
+ *
+ * The column keeps its original name on purpose: renaming it would mean a
+ * migration across attendance queries, exports, the Excel importer and the
+ * filters, for a label change. Only what people see has changed.
+ */
+export const STAFF_TYPES = [
+  'यही दरबन्दी भएको',
+  'काजमा रहेको',
+] as const;
+
+export type StaffType = (typeof STAFF_TYPES)[number];
+
+/** Label used wherever the `department` field is shown. */
+export const STAFF_TYPE_LABEL = 'Type of staff';
+
+/** Label used wherever the `office` field is shown. */
+export const DARBANDI_LABEL = 'दरबन्दी';

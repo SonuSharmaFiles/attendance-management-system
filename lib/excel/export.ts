@@ -68,7 +68,7 @@ export async function buildAttendanceWorkbook(
     ['Employee Name', meta.employeeName],
     ['Computer Code', meta.computerCode],
     ['Rank', meta.rank ?? '—'],
-    ['Department', meta.department ?? '—'],
+    ['Type of staff', meta.department ?? '—'],
     ['Period', meta.periodLabel],
     ['Total Present', String(totals.present)],
     ['Total Absent', String(totals.absent)],
@@ -108,8 +108,8 @@ export async function buildFullExportWorkbook(input: {
     { header: 'Computer Code', key: 'computer_code' },
     { header: 'Name', key: 'full_name' },
     { header: 'Rank', key: 'rank' },
-    { header: 'Department', key: 'department' },
-    { header: 'Office', key: 'office' },
+    { header: 'Type of staff', key: 'department' },
+    { header: 'दरबन्दी', key: 'office' },
   ];
   styleHeaderRow(employeesSheet.getRow(1));
   input.employees.forEach((employee) => employeesSheet.addRow(employee));

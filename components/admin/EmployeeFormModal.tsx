@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, Select } from '@/components/ui/Input';
+import { DARBANDI_LABEL, STAFF_TYPES, STAFF_TYPE_LABEL } from '@/lib/config';
 import { ProfilePhoto } from '@/components/ProfilePhoto';
 import type { Employee } from '@/types/employee';
 
@@ -12,10 +13,11 @@ type FormState = {
   computer_code: string;
   full_name: string;
   rank: string;
+  /** Holds "Type of staff". Column name kept; see lib/config.ts. */
   department: string;
+  /** Holds दरबन्दी. */
   office: string;
   phone: string;
-  email: string;
 };
 
 const EMPTY: FormState = {
@@ -25,7 +27,6 @@ const EMPTY: FormState = {
   department: '',
   office: '',
   phone: '',
-  email: '',
 };
 
 function toFormState(employee: Employee | null): FormState {
@@ -37,7 +38,6 @@ function toFormState(employee: Employee | null): FormState {
     department: employee.department ?? '',
     office: employee.office ?? '',
     phone: employee.phone ?? '',
-    email: employee.email ?? '',
   };
 }
 
@@ -148,12 +148,30 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
           />
           <Input label="Full Name" required maxLength={120} {...field('full_name')} />
           <Input label="Rank" maxLength={80} {...field('rank')} />
-          <Input label="Department" maxLength={120} {...field('department')} />
-          <Input label="Office" maxLength={120} {...field('office')} />
+
+          <Select
+            label={STAFF_TYPE_LABEL}
+            value={form.department}
+            disabled={saving}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, department: event.target.value }))
+            }
+          >
+            <option value="">— not set —</option>
+            {STAFF_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+            {/* An existing value that predates this list stays selectable, so
+                editing an employee never silently overwrites it. */}
+            {form.department && !STAFF_TYPES.includes(form.department as (typeof STAFF_TYPES)[number]) ? (
+              <option value={form.department}>{form.department} (existing)</option>
+            ) : null}
+          </Select>
+
+          <Input label={DARBANDI_LABEL} maxLength={120} {...field('office')} />
           <Input label="Phone" type="tel" maxLength={40} {...field('phone')} />
-          <div className="sm:col-span-2">
-            <Input label="Email" type="email" maxLength={160} {...field('email')} />
-          </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row-reverse">

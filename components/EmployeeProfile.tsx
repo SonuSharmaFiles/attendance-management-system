@@ -39,7 +39,7 @@ export function EmployeeProfile({ employee, photoUrl, actions }: EmployeeProfile
             ) : null}
             {employee.department || employee.office ? (
               <div className="flex flex-wrap justify-center gap-x-1.5 sm:justify-start">
-                <dt className="sr-only">Department and office</dt>
+                <dt className="sr-only">Type of staff and दरबन्दी</dt>
                 <dd>{[employee.department, employee.office].filter(Boolean).join(' · ')}</dd>
               </div>
             ) : null}

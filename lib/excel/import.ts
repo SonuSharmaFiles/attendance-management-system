@@ -14,8 +14,10 @@ const COLUMN_ALIASES: Record<keyof EmployeeImportRow, string[]> = {
   computer_code: ['computer code', 'computercode', 'code', 'comp code', 'computer_code'],
   full_name: ['name', 'full name', 'employee name', 'fullname', 'full_name'],
   rank: ['rank', 'post', 'designation'],
-  department: ['department', 'dept', 'branch'],
-  office: ['office', 'unit', 'station'],
+  // `department` now carries "Type of staff" and `office` carries दरबन्दी.
+  // The old headings stay accepted so existing spreadsheets still import.
+  department: ['department', 'dept', 'branch', 'type of staff', 'staff type'],
+  office: ['office', 'unit', 'station', 'darbandi', 'दरबन्दी'],
   phone: ['phone', 'mobile', 'contact', 'phone number'],
   email: ['email', 'e-mail', 'email address'],
 };

@@ -48,7 +48,7 @@ export function buildAttendancePdf(rows: AttendanceReportRow[], meta: PdfReportM
   detail('Name', meta.employeeName);
   detail('Computer Code', meta.computerCode);
   detail('Rank', meta.rank ?? '—');
-  detail('Department', meta.department ?? '—');
+  detail('Type of staff', meta.department ?? '—');
   detail('Period', meta.periodLabel);
 
   // --- Table ---------------------------------------------------------------

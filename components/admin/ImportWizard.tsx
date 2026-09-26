@@ -202,7 +202,7 @@ export function ImportWizard() {
                   <th scope="col" className="px-3 py-3">Outcome</th>
                   <th scope="col" className="px-3 py-3">Code</th>
                   <th scope="col" className="px-3 py-3">Name</th>
-                  <th scope="col" className="px-3 py-3">Department</th>
+                  <th scope="col" className="px-3 py-3">Type of staff</th>
                   <th scope="col" className="px-3 py-3">Notes</th>
                 </tr>
               </thead>
