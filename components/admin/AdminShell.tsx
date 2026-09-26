@@ -8,7 +8,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
-  { href: '/admin/employees', label: 'Employees', Icon: Users, exact: true },
+  { href: '/admin/employees', label: 'Staff', Icon: Users, exact: true },
   { href: '/admin/employees/import', label: 'Import', Icon: Upload, exact: true },
   { href: '/admin/attendance', label: 'Attendance', Icon: CalendarCheck, exact: true },
   { href: '/admin/holidays', label: 'Holidays', Icon: CalendarOff, exact: true },

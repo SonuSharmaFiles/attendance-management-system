@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Upload } from 'lucide-react';
 import { EmployeeManager } from '@/components/admin/EmployeeManager';
 
-export const metadata: Metadata = { title: 'Employees' };
+export const metadata: Metadata = { title: 'Staff' };
 export const dynamic = 'force-dynamic';
 
 export default function AdminEmployeesPage() {
@@ -11,7 +11,7 @@ export default function AdminEmployeesPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-navy-900 sm:text-2xl">Employee Management</h1>
+          <h1 className="text-xl font-bold text-navy-900 sm:text-2xl">Staff Management</h1>
           <p className="mt-1 text-sm text-slate-600">
             Add, edit, photograph and deactivate staff records.
           </p>

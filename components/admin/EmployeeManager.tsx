@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Plus, RotateCcw, Search, UserX } from 'lucide-react';
+import { CalendarDays, Pencil, Plus, RotateCcw, Search, UserX } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { TableSkeleton } from '@/components/LoadingState';
@@ -39,7 +40,7 @@ export function EmployeeManager() {
         | null;
 
       if (!response.ok || !payload?.ok) {
-        toast.error(payload && 'error' in payload ? payload.error : 'Unable to load employees.');
+        toast.error(payload && 'error' in payload ? payload.error : 'Unable to load staff.');
         return;
       }
 
@@ -82,7 +83,7 @@ export function EmployeeManager() {
         return;
       }
 
-      toast.success(active ? 'Employee reactivated.' : 'Employee deactivated.');
+      toast.success(active ? 'Staff member reactivated.' : 'Staff member deactivated.');
       await load();
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');
@@ -129,7 +130,7 @@ export function EmployeeManager() {
           }}
         >
           <Plus aria-hidden className="h-4 w-4" />
-          Add Employee
+          Add Staff
         </Button>
       </div>
 
@@ -138,7 +139,7 @@ export function EmployeeManager() {
       ) : employees.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 p-10 text-center">
           <Search aria-hidden className="h-6 w-6 text-slate-400" />
-          <p className="font-medium text-slate-700">No employees found</p>
+          <p className="font-medium text-slate-700">No staff found</p>
           <p className="text-sm text-slate-500">
             Try a different search, or import your staff list from Excel.
           </p>
@@ -163,7 +164,14 @@ export function EmployeeManager() {
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href={`/admin/employees/${employee.id}/attendance`}
+                    className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-navy-800 hover:bg-slate-50"
+                  >
+                    <CalendarDays aria-hidden className="h-3.5 w-3.5" />
+                    Attendance
+                  </Link>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -190,7 +198,7 @@ export function EmployeeManager() {
 
           <div className="card hidden overflow-x-auto md:block">
             <table className="w-full text-left text-sm">
-              <caption className="sr-only">Employee records</caption>
+              <caption className="sr-only">Staff records</caption>
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th scope="col" className="px-4 py-3">Code</th>
@@ -223,6 +231,13 @@ export function EmployeeManager() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
+                        <Link
+                          href={`/admin/employees/${employee.id}/attendance`}
+                          aria-label={`See attendance for ${employee.full_name}`}
+                          className="inline-flex min-h-[38px] items-center justify-center rounded-xl px-3 text-slate-600 transition-colors hover:bg-slate-100 hover:text-navy-800"
+                        >
+                          <CalendarDays aria-hidden className="h-4 w-4" />
+                        </Link>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -257,7 +272,7 @@ export function EmployeeManager() {
 
           <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
             <span>
-              {total} employee{total === 1 ? '' : 's'} · page {page} of {totalPages}
+              {total} staff member{total === 1 ? '' : 's'} · page {page} of {totalPages}
             </span>
             <div className="flex gap-2">
               <Button

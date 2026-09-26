@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +26,9 @@ const EMPTY: FormState = {
   computer_code: '',
   full_name: '',
   rank: '',
-  department: '',
+  // No blank option in the dropdown, so a new staff member starts on the
+  // first type rather than on nothing.
+  department: STAFF_TYPES[0],
   office: '',
   phone: '',
 };
@@ -95,12 +99,12 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
 
       if (!response.ok || !payload?.ok) {
         toast.error(
-          payload && 'error' in payload ? payload.error : 'The employee could not be saved.',
+          payload && 'error' in payload ? payload.error : 'The staff member could not be saved.',
         );
         return;
       }
 
-      toast.success(employee ? 'Employee updated.' : 'Employee added.');
+      toast.success(employee ? 'Staff member updated.' : 'Staff member added.');
       onSaved();
       onClose();
     } catch {
@@ -115,14 +119,14 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
       open
       onClose={onClose}
       busy={saving}
-      title={employee ? 'Edit Employee' : 'Add Employee'}
+      title={employee ? 'Edit Staff' : 'Add Staff'}
       description={
         employee ? `Updating ${employee.full_name}.` : 'Only the code and name are required.'
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {employee ? (
-          <div className="flex justify-center">
+          <div className="flex items-center justify-center gap-4">
             <ProfilePhoto
               photoUrl={photoUrl}
               fullName={employee.full_name}
@@ -134,6 +138,13 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
                 onSaved();
               }}
             />
+            <Link
+              href={`/admin/employees/${employee.id}/attendance`}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-navy-300 bg-navy-50 px-4 text-sm font-semibold text-navy-800 transition-colors hover:bg-navy-100"
+            >
+              <CalendarDays aria-hidden className="h-4 w-4" />
+              See Attendance
+            </Link>
           </div>
         ) : null}
 
@@ -157,7 +168,6 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
               setForm((current) => ({ ...current, department: event.target.value }))
             }
           >
-            <option value="">— not set —</option>
             {STAFF_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -176,7 +186,7 @@ function EmployeeForm({ employee, onClose, onSaved }: Omit<EmployeeFormModalProp
 
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
           <Button type="submit" fullWidth loading={saving}>
-            {employee ? 'Save Changes' : 'Add Employee'}
+            {employee ? 'Save Changes' : 'Add Staff'}
           </Button>
           <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={saving}>
             Cancel

@@ -193,7 +193,7 @@ export function HolidayManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
-          Holidays apply to <span className="font-semibold">every employee</span>. Staff cannot mark
+          Holidays apply to <span className="font-semibold">every staff member</span>. Staff cannot mark
           attendance on a holiday.
         </p>
         <Button
@@ -282,8 +282,8 @@ export function HolidayManager() {
         title={editing ? 'Edit Holiday' : 'Add a Holiday'}
         description={
           editing
-            ? 'Changes apply to every employee straight away.'
-            : 'This applies to every employee straight away.'
+            ? 'Changes apply to every staff member straight away.'
+            : 'This applies to every staff member straight away.'
         }
       >
         <form onSubmit={save} className="space-y-4" noValidate>

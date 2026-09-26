@@ -95,7 +95,7 @@ export function ImportWizard() {
 
       setResult(payload.data);
       setPreview(null);
-      toast.success('Employees imported successfully.');
+      toast.success('Staff imported successfully.');
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');
     } finally {
@@ -159,7 +159,7 @@ export function ImportWizard() {
             Import complete
           </h2>
           <p className="mt-1 text-sm text-present-ink">
-            {result.newEmployees} new employee{result.newEmployees === 1 ? '' : 's'} added and{' '}
+            {result.newEmployees} new staff member{result.newEmployees === 1 ? '' : 's'} added and{' '}
             {result.updatedEmployees} existing record{result.updatedEmployees === 1 ? '' : 's'} updated.
           </p>
         </section>
@@ -172,8 +172,8 @@ export function ImportWizard() {
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
               {[
                 ['Total Rows', summary.totalRows, 'text-navy-900'],
-                ['New Employees', summary.newEmployees, 'text-present'],
-                ['Updated Employees', summary.updatedEmployees, 'text-navy-700'],
+                ['New Staff', summary.newEmployees, 'text-present'],
+                ['Updated Staff', summary.updatedEmployees, 'text-navy-700'],
                 ['Duplicate Codes', summary.duplicateCodes, 'text-amber-600'],
                 ['Invalid Rows', summary.invalidRows, 'text-absent'],
               ].map(([label, value, tone]) => (

@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Tile label="Total Employees" value={totalEmployees} Icon={Users} tone="text-navy-600" />
+          <Tile label="Total Staff" value={totalEmployees} Icon={Users} tone="text-navy-600" />
           <Tile label="Today's Present" value={presentCount} Icon={Check} tone="text-present" />
           <Tile label="Today's Absent" value={absentCount} Icon={X} tone="text-absent" />
           <Tile label="Today's Not Marked" value={notMarked} Icon={Minus} tone="text-unmarked" />
@@ -81,14 +81,14 @@ export default async function AdminDashboardPage() {
         {[
           {
             href: '/admin/employees',
-            title: 'Manage Employees',
+            title: 'Manage Staff',
             description: 'Add, edit, search, photograph or deactivate staff records.',
             Icon: Users,
           },
           {
             href: '/admin/employees/import',
             title: 'Import from Excel',
-            description: 'Upload your existing employee spreadsheet with a preview first.',
+            description: 'Upload your existing staff spreadsheet with a preview first.',
             Icon: Upload,
           },
           {

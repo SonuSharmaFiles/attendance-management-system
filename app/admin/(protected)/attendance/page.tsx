@@ -26,7 +26,7 @@ export default async function AdminAttendancePage() {
       <div>
         <h1 className="text-xl font-bold text-navy-900 sm:text-2xl">Attendance Management</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Review, correct and export attendance records for any employee or period.
+          Review, correct and export attendance records for any staff member or period.
         </p>
       </div>
 

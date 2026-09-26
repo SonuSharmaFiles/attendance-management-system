@@ -184,7 +184,7 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
 
         <div className="relative">
           <Input
-            label="Employee"
+            label="Staff member"
             placeholder="Search by name or computer code"
             value={selectedEmployee ? `${selectedEmployee.computer_code} — ${selectedEmployee.full_name}` : employeeQuery}
             onChange={(event) => {
@@ -227,7 +227,7 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
                 setEmployeeQuery('');
               }}
             >
-              Clear employee filter
+              Clear staff filter
             </Button>
             <Button
               size="sm"
@@ -322,7 +322,7 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
                 <th scope="col" className="px-3 py-3">Date</th>
                 <th scope="col" className="px-3 py-3">Day</th>
                 <th scope="col" className="px-3 py-3">Code</th>
-                <th scope="col" className="px-3 py-3">Employee</th>
+                <th scope="col" className="px-3 py-3">Staff</th>
                 <th scope="col" className="px-3 py-3">Status</th>
                 <th scope="col" className="px-3 py-3">Remark</th>
                 <th scope="col" className="px-3 py-3 text-right">Edit</th>
