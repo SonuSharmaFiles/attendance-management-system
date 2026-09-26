@@ -166,7 +166,7 @@ export function AttendanceCalendar({
                   aria-label={`${bsDay} ${bsMonthLabel(yearMonth)}, ${statusText}${locked ? ', set by administrator' : ''}`}
                   aria-current={isToday ? 'date' : undefined}
                   title={blockedReason ?? undefined}
-                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${blockedReason ? 'cursor-help' : ''} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
+                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${blockedReason ? (isFuture && !allowFuture ? 'cursor-not-allowed' : 'cursor-help') : ''} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
                 >
                   <span className="text-sm font-semibold leading-none sm:text-base">
                     {toNepaliNumber(bsDay)}
