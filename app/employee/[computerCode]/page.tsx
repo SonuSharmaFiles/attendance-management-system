@@ -61,7 +61,6 @@ export default async function EmployeePage({ params }: PageProps) {
       initialDays={days}
       initialHolidays={[...holidays.values()]}
       today={today}
-      organisationName={settings.organisationName}
       settings={{
         attendanceEditEnabled: settings.attendanceEditEnabled,
         allowFutureAttendance: settings.allowFutureAttendance,

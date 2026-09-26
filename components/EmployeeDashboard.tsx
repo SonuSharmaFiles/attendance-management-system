@@ -20,6 +20,7 @@ import {
 } from '@/lib/date/bikram';
 import type { AttendanceDay, AttendanceStatus, CalendarHoliday } from '@/types/attendance';
 import type { EmployeePublic } from '@/types/employee';
+import { ADMIN_SUBTITLE, ADMIN_TITLE } from '@/lib/config';
 
 interface EmployeeDashboardProps {
   employee: EmployeePublic;
@@ -27,7 +28,6 @@ interface EmployeeDashboardProps {
   initialDays: AttendanceDay[];
   initialHolidays: CalendarHoliday[];
   today: DateStr;
-  organisationName: string;
   settings: { attendanceEditEnabled: boolean; allowFutureAttendance: boolean };
 }
 
@@ -37,7 +37,6 @@ export function EmployeeDashboard({
   initialDays,
   initialHolidays,
   today,
-  organisationName,
   settings,
 }: EmployeeDashboardProps) {
   const router = useRouter();
@@ -161,8 +160,8 @@ export function EmployeeDashboard({
   return (
     <div className="min-h-screen">
       <Header
-        title="Attendance Management"
-        subtitle={organisationName}
+        title={ADMIN_TITLE}
+        subtitle={ADMIN_SUBTITLE}
         action={
           <button
             type="button"
