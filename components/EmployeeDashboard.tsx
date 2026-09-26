@@ -194,6 +194,9 @@ export function EmployeeDashboard({
           allowFuture={settings.allowFutureAttendance}
           onSelectDate={setSelectedDate}
           onChangeMonth={handleChangeMonth}
+          onBlockedClick={(message) =>
+            toast(message, { id: 'blocked-day', duration: 2500, icon: '🔒' })
+          }
         />
 
         {loadingMonth ? <LoadingRegion label={`Loading attendance for ${label}`} /> : null}

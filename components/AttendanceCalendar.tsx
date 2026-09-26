@@ -23,6 +23,13 @@ interface AttendanceCalendarProps {
   allowFuture: boolean;
   onSelectDate: (date: DateStr) => void;
   onChangeMonth: (delta: number) => void;
+  /**
+   * Supplied by the staff view only. When a day cannot be changed, it is shown
+   * as a brief message instead of opening a dialog — there is nothing to
+   * decide, so a dialog is just an extra click. The administrator's own view
+   * omits this, because for them every day IS editable.
+   */
+  onBlockedClick?: (message: string) => void;
 }
 
 const CELL = {
@@ -44,6 +51,7 @@ export function AttendanceCalendar({
   allowFuture,
   onSelectDate,
   onChangeMonth,
+  onBlockedClick,
 }: AttendanceCalendarProps) {
   const label = bsMonthLabel(yearMonth);
   const cells = buildBsMonthGrid(yearMonth);
@@ -111,17 +119,25 @@ export function AttendanceCalendar({
               const isToday = date === today;
               const locked = Boolean(record?.lockedByAdmin);
 
-              // Nothing is click-dead. Holidays, admin-set days and (when
-              // disallowed) future days all open the dialog, which explains
-              // why they cannot be changed. Silently ignoring a tap just looks
-              // broken.
-              const blocked = Boolean(holiday) || (isFuture && !allowFuture);
+              // A day an administrator set, or a holiday, is not the staff
+              // member's to change. Everything else is. Nothing is ever
+              // click-dead: a blocked day still answers, just briefly.
+              const blockedReason = locked
+                ? 'Updated by administrator'
+                : holiday
+                  ? `${holiday.title} — holiday set by administrator`
+                  : isFuture && !allowFuture
+                    ? 'This day has not arrived yet'
+                    : null;
+              const handledAsMessage = Boolean(blockedReason) && Boolean(onBlockedClick);
 
               const tone = holiday
                 ? CELL.holiday
                 : record
                   ? CELL[record.status]
-                  : isFuture
+                  // Only dim a future day when marking ahead is switched OFF.
+                  // With it on, it is an ordinary day and should look like one.
+                  : isFuture && !allowFuture
                     ? CELL.future
                     : CELL.unmarked;
 
@@ -140,11 +156,17 @@ export function AttendanceCalendar({
                   key={date}
                   type="button"
                   role="gridcell"
-                  onClick={() => onSelectDate(date)}
+                  onClick={() => {
+                    if (handledAsMessage) {
+                      onBlockedClick!(blockedReason!);
+                      return;
+                    }
+                    onSelectDate(date);
+                  }}
                   aria-label={`${bsDay} ${bsMonthLabel(yearMonth)}, ${statusText}${locked ? ', set by administrator' : ''}`}
                   aria-current={isToday ? 'date' : undefined}
-                  title={holiday ? holiday.title : undefined}
-                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${blocked ? 'cursor-help' : ''} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
+                  title={blockedReason ?? undefined}
+                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${blockedReason ? 'cursor-help' : ''} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
                 >
                   <span className="text-sm font-semibold leading-none sm:text-base">
                     {toNepaliNumber(bsDay)}
