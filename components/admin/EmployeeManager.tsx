@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarDays, Pencil, Plus, RotateCcw, Search, UserX } from 'lucide-react';
+import { CalendarDays, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { StaffDownloadButton } from '@/components/admin/StaffDownloadButton';
 import { Button } from '@/components/ui/Button';
@@ -63,7 +63,15 @@ export function EmployeeManager() {
   async function setActive(employee: Employee, active: boolean) {
     if (pendingId) return;
 
-    if (!active && !window.confirm(`Deactivate ${employee.full_name}? Their attendance history is kept.`)) {
+    if (
+      !active &&
+      !window.confirm(
+        `Remove ${employee.full_name} from the active staff list?\n\n` +
+          `They will no longer be able to sign in, and they disappear from the list.\n\n` +
+          `Nothing is destroyed: their record and all their attendance are kept, and you can ` +
+          `bring them back at any time by switching Status to "Deactivated".`,
+      )
+    ) {
       return;
     }
 
@@ -84,7 +92,11 @@ export function EmployeeManager() {
         return;
       }
 
-      toast.success(active ? 'Staff member reactivated.' : 'Staff member deactivated.');
+      toast.success(
+        active
+          ? 'Staff member restored to the active list.'
+          : 'Staff member removed from the active list. Their records are kept.',
+      );
       await load();
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');
@@ -194,7 +206,7 @@ export function EmployeeManager() {
                     loading={pendingId === employee.id}
                     onClick={() => setActive(employee, !employee.is_active)}
                   >
-                    {employee.is_active ? 'Deactivate' : 'Reactivate'}
+                    {employee.is_active ? 'Remove' : 'Restore'}
                   </Button>
                 </div>
               </li>
@@ -262,11 +274,11 @@ export function EmployeeManager() {
                           size="sm"
                           variant="ghost"
                           loading={pendingId === employee.id}
-                          aria-label={`${employee.is_active ? 'Deactivate' : 'Reactivate'} ${employee.full_name}`}
+                          aria-label={`${employee.is_active ? 'Remove' : 'Restore'} ${employee.full_name}`}
                           onClick={() => setActive(employee, !employee.is_active)}
                         >
                           {employee.is_active ? (
-                            <UserX aria-hidden className="h-4 w-4" />
+                            <Trash2 aria-hidden className="h-4 w-4" />
                           ) : (
                             <RotateCcw aria-hidden className="h-4 w-4" />
                           )}
