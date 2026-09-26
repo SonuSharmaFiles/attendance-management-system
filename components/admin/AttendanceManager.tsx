@@ -257,8 +257,64 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
           <p className="text-sm text-slate-500">Try widening the date range or clearing a filter.</p>
         </div>
       ) : (
-        <section className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <>
+          {/* On phones a seven-column table can only be read by dragging it
+              sideways, which hides Status and the Edit button. Below `md` the
+              same records are shown as cards instead. */}
+          <ul className="space-y-2 md:hidden">
+            {rows.map((row) => (
+              <li key={row.id} className="card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-navy-900">
+                      {row.attendance_date}
+                      <span className="ml-1.5 text-xs font-normal text-slate-500">
+                        {dayName(row.attendance_date)}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 truncate text-sm text-slate-700">
+                      {row.employees?.full_name ?? '—'}
+                    </p>
+                    <p className="font-mono text-xs text-slate-500">
+                      {row.employees?.computer_code ?? '—'}
+                    </p>
+                  </div>
+                  <StatusBadge status={row.status} className="shrink-0" />
+                </div>
+
+                {row.remark ? (
+                  <p className="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
+                    {row.remark}
+                  </p>
+                ) : null}
+
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-3"
+                  onClick={() =>
+                    setEdit({
+                      employeeId: row.employee_id,
+                      employeeName: row.employees?.full_name ?? 'Employee',
+                      date: row.attendance_date,
+                      status: row.status,
+                      remark: row.remark ?? '',
+                    })
+                  }
+                >
+                  <Pencil aria-hidden className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              </li>
+            ))}
+            <li className="px-1 pt-1 text-xs text-slate-500">
+              Showing {rows.length} record{rows.length === 1 ? '' : 's'} (maximum 1000 per query).
+              Use Export for a complete report.
+            </li>
+          </ul>
+
+          <section className="card hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-sm">
             <caption className="sr-only">Attendance records</caption>
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -308,11 +364,12 @@ export function AttendanceManager({ departments }: { departments: string[] }) {
               ))}
             </tbody>
           </table>
-          <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
-            Showing {rows.length} record{rows.length === 1 ? '' : 's'} (maximum 1000 per query). Use
-            Export for a complete report.
-          </p>
-        </section>
+            <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+              Showing {rows.length} record{rows.length === 1 ? '' : 's'} (maximum 1000 per query).
+              Use Export for a complete report.
+            </p>
+          </section>
+        </>
       )}
 
       <Modal

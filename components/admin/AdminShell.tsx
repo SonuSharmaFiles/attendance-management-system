@@ -64,8 +64,14 @@ export function AdminShell({
         </div>
 
         {/* Horizontally scrollable on phones so no tab is ever unreachable. */}
-        <nav aria-label="Admin sections" className="border-t border-navy-700/60 bg-navy-900">
-          <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 sm:px-6">
+        <nav aria-label="Admin sections" className="relative border-t border-navy-700/60 bg-navy-900">
+          {/* A fade at the right edge, so it is obvious on a phone that there
+              are more tabs to swipe to. Hidden once they all fit. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-navy-900 to-transparent sm:hidden"
+          />
+          <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
             {NAV.map(({ href, label, Icon, exact }) => {
               const active = exact ? pathname === href : pathname.startsWith(href);
               return (

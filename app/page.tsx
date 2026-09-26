@@ -36,8 +36,11 @@ export default function LandingPage() {
             </span>
           </p>
 
-          <p className="mt-8 text-center text-xs text-slate-400">
-            <Link href="/admin" className="underline underline-offset-2 hover:text-slate-600">
+          <p className="mt-6 text-center">
+            <Link
+              href="/admin"
+              className="inline-flex min-h-[44px] items-center justify-center px-4 text-xs text-slate-400 underline underline-offset-2 hover:text-slate-600"
+            >
               Administrator sign in
             </Link>
           </p>
