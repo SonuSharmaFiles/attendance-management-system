@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { isValidDateStr } from '@/lib/date/nepal';
-import { ALLOWED_PHOTO_TYPES, MAX_PHOTO_BYTES, MAX_REMARK_LENGTH } from '@/lib/config';
+import {
+  ALLOWED_PHOTO_TYPES,
+  MAX_BULK_EMPLOYEES,
+  MAX_PHOTO_BYTES,
+  MAX_REMARK_LENGTH,
+} from '@/lib/config';
 
 /**
  * Computer codes are alphanumeric with optional dashes/underscores, e.g. NP12345.
@@ -93,6 +98,34 @@ export const employeeInputSchema = z.object({
 export const employeeUpdateSchema = employeeInputSchema.partial().extend({
   computer_code: computerCodeSchema.optional(),
 });
+
+/**
+ * One change applied to several staff at once, from the staff list.
+ *
+ * A field that is absent is left alone on every selected person; a field that
+ * is present overwrites it. There is deliberately no way to blank a rank or a
+ * type in bulk — an empty box means "keep what is there", because that is what
+ * an empty box looks like it means, and a bulk wipe is not something anyone
+ * should be able to do by leaving a field untouched.
+ */
+export const employeeBulkUpdateSchema = z
+  .object({
+    ids: z
+      .array(z.string().uuid('Invalid staff reference.'))
+      .min(1, 'Select at least one staff member.')
+      .max(MAX_BULK_EMPLOYEES, `You can change at most ${MAX_BULK_EMPLOYEES} staff at a time.`)
+      // The same id twice is harmless but points at a confused caller, and the
+      // "how many were changed" count would not match what was asked for.
+      .transform((ids) => Array.from(new Set(ids))),
+    rank: z.string().trim().min(1, 'Rank cannot be blank.').max(80).optional(),
+    department: z.string().trim().min(1, 'Type of staff cannot be blank.').max(120).optional(),
+    is_active: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.rank !== undefined || value.department !== undefined || value.is_active !== undefined,
+    { message: 'Choose at least one thing to change.', path: ['rank'] },
+  );
 
 /** Admin attendance edits carry an explicit employee id — admins may act for anyone. */
 export const adminAttendanceSchema = z.object({

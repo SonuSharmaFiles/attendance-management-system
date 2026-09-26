@@ -5,14 +5,31 @@ import { toast } from 'sonner';
 import { CalendarDays, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { StaffDownloadButton } from '@/components/admin/StaffDownloadButton';
+import { BulkActionBar, type BulkChanges } from '@/components/admin/BulkActionBar';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input, Select } from '@/components/ui/Input';
 import { TableSkeleton } from '@/components/LoadingState';
 import { EmployeeFormModal } from '@/components/admin/EmployeeFormModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { STAFF_TYPE_LABEL } from '@/lib/config';
 import type { Employee } from '@/types/employee';
 
 const PAGE_SIZE = 25;
+
+/** Plain-English lines describing what a bulk edit will do, for the confirm. */
+function describeChanges(changes: BulkChanges): string[] {
+  const lines: string[] = [];
+  if (changes.rank !== undefined) lines.push(`Rank becomes "${changes.rank}".`);
+  if (changes.department !== undefined) {
+    lines.push(`${STAFF_TYPE_LABEL} becomes "${changes.department}".`);
+  }
+  if (changes.is_active === true) lines.push('They go back on to the active list.');
+  if (changes.is_active === false) {
+    lines.push('They come off the active list. Their records and attendance are kept.');
+  }
+  return lines;
+}
 
 export function EmployeeManager() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -26,6 +43,11 @@ export function EmployeeManager() {
   const [editing, setEditing] = useState<Employee | null>(null);
   /** The staff member awaiting confirmation of removal. */
   const [confirming, setConfirming] = useState<Employee | null>(null);
+  /** Ids of the ticked rows. Only ever rows on the page in front of you. */
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  /** The bulk edit awaiting confirmation. */
+  const [bulkChanges, setBulkChanges] = useState<BulkChanges | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +72,10 @@ export function EmployeeManager() {
 
       setEmployees(payload.data.employees);
       setTotal(payload.data.total);
+      // A new page, a new search or a saved change means the ticked rows are
+      // no longer the rows on screen. Start the selection again rather than
+      // letting it point at people the admin can no longer see.
+      setSelected(new Set());
     } catch {
       toast.error('Unable to reach the server. Please check your connection.');
     } finally {
@@ -62,6 +88,50 @@ export function EmployeeManager() {
     const timer = window.setTimeout(() => void load(), 250);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  function toggleOne(id: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function applyBulk(changes: BulkChanges) {
+    const ids = Array.from(selected);
+    if (ids.length === 0 || bulkBusy) return;
+
+    setBulkBusy(true);
+    try {
+      const response = await fetch('/api/admin/employees/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, ...changes }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok: true; data: { updated: number } }
+        | { ok: false; error: string }
+        | null;
+
+      if (!response.ok || !payload?.ok) {
+        toast.error(
+          payload && 'error' in payload ? payload.error : 'The changes could not be saved.',
+        );
+        return;
+      }
+
+      const { updated } = payload.data;
+      toast.success(`${updated} staff member${updated === 1 ? '' : 's'} updated.`);
+      await load();
+    } catch {
+      toast.error('Unable to reach the server. Please check your connection.');
+    } finally {
+      setBulkBusy(false);
+      setBulkChanges(null);
+    }
+  }
 
   function requestRemove(employee: Employee) {
     if (pendingId) return;
@@ -102,6 +172,12 @@ export function EmployeeManager() {
   }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const allOnPageSelected = employees.length > 0 && employees.every((one) => selected.has(one.id));
+  const someOnPageSelected = !allOnPageSelected && employees.some((one) => selected.has(one.id));
+
+  function toggleAllOnPage() {
+    setSelected(allOnPageSelected ? new Set() : new Set(employees.map((one) => one.id)));
+  }
 
   return (
     <div className="space-y-4">
@@ -155,12 +231,45 @@ export function EmployeeManager() {
         </div>
       ) : (
         <>
-          {/* Cards on phones, a table from `md` up — both from the same data. */}
+          {selected.size > 0 ? (
+            <BulkActionBar
+              count={selected.size}
+              busy={bulkBusy}
+              onApply={setBulkChanges}
+              onClear={() => setSelected(new Set())}
+            />
+          ) : null}
+
+          {/* Cards on phones, a table from `md` up — both from the same data.
+              The phone layout has no header row, so "select all" needs a line
+              of its own; on the table it lives in the header cell. */}
+          <div className="flex items-center gap-1 md:hidden">
+            <Checkbox
+              label="Select every staff member on this page"
+              checked={allOnPageSelected}
+              indeterminate={someOnPageSelected}
+              disabled={bulkBusy}
+              onChange={toggleAllOnPage}
+            />
+            <span className="text-sm text-slate-600">Select all on this page</span>
+          </div>
+
           <ul className="space-y-2 md:hidden">
             {employees.map((employee) => (
-              <li key={employee.id} className="card p-3">
+              <li
+                key={employee.id}
+                className={`card p-3 ${selected.has(employee.id) ? 'ring-2 ring-navy-300' : ''}`}
+              >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="-ml-2 shrink-0">
+                    <Checkbox
+                      label={`Select ${employee.full_name}`}
+                      checked={selected.has(employee.id)}
+                      disabled={bulkBusy}
+                      onChange={() => toggleOne(employee.id)}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-navy-900">{employee.full_name}</p>
                     <p className="font-mono text-xs text-slate-500">{employee.computer_code}</p>
                     <p className="mt-1 truncate text-xs text-slate-600">
@@ -216,6 +325,15 @@ export function EmployeeManager() {
               <caption className="sr-only">Staff records</caption>
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
+                  <th scope="col" className="w-12 py-3 pl-1 pr-0">
+                    <Checkbox
+                      label="Select every staff member on this page"
+                      checked={allOnPageSelected}
+                      indeterminate={someOnPageSelected}
+                      disabled={bulkBusy}
+                      onChange={toggleAllOnPage}
+                    />
+                  </th>
                   <th scope="col" className="px-4 py-3">Code</th>
                   <th scope="col" className="px-4 py-3">Name</th>
                   <th scope="col" className="px-4 py-3">Rank</th>
@@ -226,7 +344,24 @@ export function EmployeeManager() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {employees.map((employee) => (
-                  <tr key={employee.id} className={employee.is_active ? '' : 'bg-slate-50/60'}>
+                  <tr
+                    key={employee.id}
+                    className={
+                      selected.has(employee.id)
+                        ? 'bg-navy-50'
+                        : employee.is_active
+                          ? ''
+                          : 'bg-slate-50/60'
+                    }
+                  >
+                    <td className="w-12 py-3 pl-1 pr-0">
+                      <Checkbox
+                        label={`Select ${employee.full_name}`}
+                        checked={selected.has(employee.id)}
+                        disabled={bulkBusy}
+                        onChange={() => toggleOne(employee.id)}
+                      />
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-navy-800">
                       {employee.computer_code}
                     </td>
@@ -345,6 +480,25 @@ export function EmployeeManager() {
         onCancel={() => setConfirming(null)}
         onConfirm={() => {
           if (confirming) void setActive(confirming, false);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(bulkChanges)}
+        tone={bulkChanges?.is_active === false ? 'danger' : 'info'}
+        title={`Change ${selected.size} staff member${selected.size === 1 ? '' : 's'}?`}
+        message={
+          bulkChanges
+            ? `The same change is applied to all ${selected.size} staff you ticked.`
+            : ''
+        }
+        details={bulkChanges ? describeChanges(bulkChanges) : []}
+        confirmLabel="Apply the change"
+        cancelLabel="Go back"
+        busy={bulkBusy}
+        onCancel={() => setBulkChanges(null)}
+        onConfirm={() => {
+          if (bulkChanges) void applyBulk(bulkChanges);
         }}
       />
     </div>

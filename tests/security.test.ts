@@ -131,4 +131,32 @@ describe('input validation', () => {
         .success,
     );
   });
+
+  it('refuses a bulk staff edit that changes nothing or selects nobody', async () => {
+    const { employeeBulkUpdateSchema } = await import('@/lib/validation/schemas');
+    const id = '11111111-1111-4111-8111-111111111111';
+
+    assert.ok(employeeBulkUpdateSchema.safeParse({ ids: [id], rank: 'ASI' }).success);
+    // No field to change: an empty edit must not quietly touch every row.
+    assert.ok(!employeeBulkUpdateSchema.safeParse({ ids: [id] }).success);
+    assert.ok(!employeeBulkUpdateSchema.safeParse({ ids: [], rank: 'ASI' }).success);
+    assert.ok(!employeeBulkUpdateSchema.safeParse({ ids: ['not-a-uuid'], rank: 'ASI' }).success);
+    // A blank rank means "keep it", never "wipe it for everyone".
+    assert.ok(!employeeBulkUpdateSchema.safeParse({ ids: [id], rank: '   ' }).success);
+  });
+
+  it('caps and de-duplicates the ids in a bulk staff edit', async () => {
+    const { employeeBulkUpdateSchema } = await import('@/lib/validation/schemas');
+    const { MAX_BULK_EMPLOYEES } = await import('@/lib/config');
+    const id = '11111111-1111-4111-8111-111111111111';
+
+    const parsed = employeeBulkUpdateSchema.parse({ ids: [id, id, id], is_active: false });
+    assert.deepEqual(parsed.ids, [id]);
+
+    const tooMany = Array.from(
+      { length: MAX_BULK_EMPLOYEES + 1 },
+      (_unused, index) => `11111111-1111-4111-8111-${String(index).padStart(12, '0')}`,
+    );
+    assert.ok(!employeeBulkUpdateSchema.safeParse({ ids: tooMany, is_active: false }).success);
+  });
 });

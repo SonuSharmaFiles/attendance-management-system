@@ -52,6 +52,13 @@ export const MAX_REMARK_LENGTH = 300;
 export const MAX_EXPORT_MONTHS = 24;
 
 /**
+ * How many staff one bulk edit may touch. A page of the staff list holds at
+ * most 100, so this is generous — it exists to stop a malformed request from
+ * rewriting the whole table in a single call.
+ */
+export const MAX_BULK_EMPLOYEES = 200;
+
+/**
  * "Type of staff" — stored in the `department` column.
  *
  * The column keeps its original name on purpose: renaming it would mean a
@@ -72,8 +79,10 @@ export const STAFF_TYPE_LABEL = 'Type of staff';
 export const DARBANDI_LABEL = 'दरबन्दी';
 
 /**
- * Admin panel heading. Kept in config rather than hard-coded in the component
- * so it can be changed from the environment without touching the code.
+ * Site heading, shown in both the admin panel and the staff portal so the two
+ * carry the same branding. Kept in config rather than hard-coded in the
+ * components so it can be changed from the environment without touching code.
+ * The env var names keep the ADMIN_ prefix for backwards compatibility.
  */
 export const ADMIN_TITLE =
   process.env.NEXT_PUBLIC_ADMIN_TITLE?.trim() || 'मधेश प्रदेश प्रहरी तालिम केन्द्र, जनकपुर';
