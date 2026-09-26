@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Lock, PartyPopper, X } from 'lucide-react';
+import { CalendarClock, Check, Lock, PartyPopper, X } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
@@ -15,6 +15,8 @@ interface AttendanceModalProps {
   date: DateStr | null;
   existing: AttendanceDay | null;
   holiday?: CalendarHoliday | null;
+  /** True when the date has not arrived and advance marking is switched off. */
+  isBlockedFuture?: boolean;
   saving: boolean;
   editEnabled: boolean;
   onClose: () => void;
@@ -35,6 +37,7 @@ function AttendanceDialog({
   date,
   existing,
   holiday,
+  isBlockedFuture,
   saving,
   editEnabled,
   onClose,
@@ -49,7 +52,8 @@ function AttendanceDialog({
   // Three separate reasons a day may be read-only, each with its own message.
   const adminLocked = Boolean(existing?.lockedByAdmin);
   const isHoliday = Boolean(holiday);
-  const locked = adminLocked || isHoliday || (Boolean(existing) && !editEnabled);
+  const locked =
+    adminLocked || isHoliday || Boolean(isBlockedFuture) || (Boolean(existing) && !editEnabled);
 
   return (
     <Modal
@@ -58,7 +62,7 @@ function AttendanceDialog({
       busy={saving}
       title={`Attendance — ${bsLongLabelNepali(toBs(date))}`}
       description={
-        isHoliday
+        isHoliday || isBlockedFuture
           ? `${bsLongLabel(toBs(date))} · ${date}`
           : adminLocked
             ? 'Updated by administrator'
@@ -69,6 +73,18 @@ function AttendanceDialog({
                 : `${bsLongLabel(toBs(date))} · ${date}`
       }
     >
+      {isBlockedFuture && !isHoliday ? (
+        <p className="mb-4 flex items-start gap-2 rounded-xl bg-slate-100 px-3 py-3 text-sm text-slate-700">
+          <CalendarClock aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <span className="font-semibold">This day has not arrived yet</span>
+            <span className="mt-0.5 block text-xs">
+              You can mark it on the day, or afterwards.
+            </span>
+          </span>
+        </p>
+      ) : null}
+
       {isHoliday ? (
         <p className="mb-4 flex items-start gap-2 rounded-xl bg-absent-soft px-3 py-3 text-sm text-absent-ink">
           <PartyPopper aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />

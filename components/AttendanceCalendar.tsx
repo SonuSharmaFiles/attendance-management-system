@@ -30,7 +30,7 @@ const CELL = {
   absent: 'bg-absent-soft border-red-400 text-absent-ink hover:bg-red-200',
   // Holidays use the same red family as Absent but are visibly not a choice:
   // dashed border, no hover, cursor unchanged.
-  holiday: 'bg-absent-soft border-dashed border-red-400 text-absent-ink cursor-not-allowed',
+  holiday: 'bg-absent-soft border-dashed border-red-400 text-absent-ink',
   unmarked: 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100',
   future: 'bg-slate-50 border-dashed border-slate-200 text-slate-400',
 } as const;
@@ -111,8 +111,11 @@ export function AttendanceCalendar({
               const isToday = date === today;
               const locked = Boolean(record?.lockedByAdmin);
 
-              // Holidays are never markable by staff; future days depend on config.
-              const disabled = Boolean(holiday) || (isFuture && !allowFuture);
+              // Nothing is click-dead. Holidays, admin-set days and (when
+              // disallowed) future days all open the dialog, which explains
+              // why they cannot be changed. Silently ignoring a tap just looks
+              // broken.
+              const blocked = Boolean(holiday) || (isFuture && !allowFuture);
 
               const tone = holiday
                 ? CELL.holiday
@@ -137,12 +140,11 @@ export function AttendanceCalendar({
                   key={date}
                   type="button"
                   role="gridcell"
-                  disabled={disabled}
                   onClick={() => onSelectDate(date)}
                   aria-label={`${bsDay} ${bsMonthLabel(yearMonth)}, ${statusText}${locked ? ', set by administrator' : ''}`}
                   aria-current={isToday ? 'date' : undefined}
                   title={holiday ? holiday.title : undefined}
-                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
+                  className={`relative flex h-[30px] flex-col items-center justify-center rounded-lg border px-0.5 transition-colors sm:h-[42px] ${tone} ${blocked ? 'cursor-help' : ''} ${isToday ? 'ring-2 ring-navy-600 ring-offset-1' : ''}`}
                 >
                   <span className="text-sm font-semibold leading-none sm:text-base">
                     {toNepaliNumber(bsDay)}

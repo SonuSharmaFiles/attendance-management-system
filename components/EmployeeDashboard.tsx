@@ -207,6 +207,11 @@ export function EmployeeDashboard({
         date={selectedDate}
         existing={existing}
         holiday={selectedDate ? (holidayMap.get(selectedDate) ?? null) : null}
+        isBlockedFuture={
+          Boolean(selectedDate) &&
+          !settings.allowFutureAttendance &&
+          (selectedDate as string) > today
+        }
         saving={saving}
         editEnabled={settings.attendanceEditEnabled}
         onClose={() => {
